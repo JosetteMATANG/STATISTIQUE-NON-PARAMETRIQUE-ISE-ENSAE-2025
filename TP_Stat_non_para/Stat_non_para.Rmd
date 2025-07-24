@@ -1,0 +1,4264 @@
+---
+output:
+  pdf_document:
+    keep_tex: true
+    latex_engine: xelatex
+    number_sections: true
+    fig_caption: true
+    includes:
+      in_header: header.tex
+  html_document:
+    df_print: paged
+fontsize: 12pt
+geometry: margin=1.5cm
+toc_depth: 2
+header-includes:
+- \usepackage{tcolorbox}
+- \usepackage{pdfpages}
+- \usepackage{setspace}
+- \usepackage{float}
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \setcounter{tocdepth}{2}
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\includepdf[pages=1,fitpaper=true]{Page_de_garde.pdf}
+
+\newpage  
+
+\renewcommand{\contentsname}{\centering\textcolor{blue}{CONTENTS}} 
+
+\tableofcontents
+
+\newpage 
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Installation de packages nécessaires
+
+#install.packages("Kendall", repos = "https://cloud.r-project.org/")
+#install.packages("lawstat")
+#install.packages("randtests")
+# install.packages("prettydoc")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Chargement des packages nécessaires 
+library(readxl)
+library(Kendall) 
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(ggplot2)
+library(gridExtra)
+library(haven)
+library(lawstat)
+library(KernSmooth)
+```
+
+# \textcolor{blue}{CHAPITRE 1}
+
+## Exercice 1 : 
+
+*Reformulation du problème :* générer un échantillon de taille supérieure à 30 suivant différentes lois puis observer la distribution de chacune d'elles.
+
+Conclure. 
+
+### Génération des échantillons
+
+```{r}
+set.seed(123) # Fixer la graine pour assurer la reproductibilité
+n <- 100 # Taille des échantillons 
+
+#------------- Génération des échantillons ----------------------------
+
+Echant_expo <- rexp(n, rate = 1)# Loi exponentielle (lambda = 1)
+Echant_pois <- rpois(n, lambda = 5) # Loi de Poisson (lambda = 5)
+Echant_stud <- rt(n, df = 5) # Loi de Student (ddl = 5)
+Echant_geo <- rgeom(n, prob = 0.3) # Loi Géométrique (p = 0.3)
+
+# Loi normale
+mu <- 0  #moyenne   
+sigma <- 1  #écart-type
+Echant_normal <- rnorm(n, mean = mu, sd = sigma)
+```
+
+### Distribution d'échantillonnage de chaque loi
+
+- **Loi exponentielle** 
+
+```{r message=FALSE}
+
+# Histogramme et courbe de densité
+
+hist(Echant_expo, probability = TRUE, col = "lightblue", 
+     main = "Distribution exponentielle (n=100, lambda=1)",
+     xlab = "Valeurs", ylab = "Densité", border = "black",
+     xlim = c(0, max(Echant_expo) + 1), breaks = 30)  
+
+lines(density(Echant_expo), col = "blue", lwd = 2) # Courbe de densité 
+
+# Personnalisation de l'axe des x
+axis(1, at = seq(0, max(Echant_expo) + 1, by = 1))  # Graduation tous les 1
+
+# Légende
+legend("topright", legend = c("Courbe de densité"), 
+       col = c("blue"), lwd = 2, lty = c(1), cex = 0.8)
+
+```
+
+- **Loi de Poisson**
+
+```{r}
+# Histogramme et courbe de densité
+
+hist(Echant_pois, probability = TRUE, col = "lightblue", 
+     main = "Distribution de Poisson (n=100, lambda=5)",
+     xlab = "Valeurs", ylab = "Densité", border = "black",
+     xlim = c(0, max(Echant_pois) + 2), breaks = max(Echant_pois) + 1)  
+
+lines(density(Echant_pois), col = "blue", lwd = 2) # Courbe de densité  
+
+# Personnalisation de l'axe des x
+axis(1, at = seq(0, max(Echant_pois) + 2, by = 1))  # Graduation tous les 1
+
+# Légende
+legend("topright", legend = c("Courbe de densité"), 
+       col = c("blue"), lwd = 2, lty = c(1), cex = 0.8)
+
+```
+
+- **Loi de Student**
+
+```{r}
+
+# Histogramme et courbe de densité
+
+hist(Echant_stud, probability = TRUE, col = "lightblue", 
+     main = "Distribution de Student (n=100, ddl=5)",
+     xlab = "Valeurs", ylab = "Densité", border = "black",
+     xlim = c(-6, 5), breaks = 20) 
+
+lines(density(Echant_stud), col = "blue", lwd = 2) # Courbe de densité empirique
+curve(dt(x, df = 5), col = "red", lwd = 2, add = TRUE, lty = 2) # Densité théorique
+
+# Personnalisation de l'axe des x
+axis(1, at = seq(-6, 5, by = 1))  # Ajoute des graduations tous les 1
+
+# Légende
+legend("topright", legend = c("Densité empirique", "Densité théorique"), 
+       col = c("blue", "red"), lwd = 2, lty = c(1,2), cex = 0.8)
+```
+
+- **Loi géométrique**
+
+```{r}
+#histogramme et courbe de densité
+
+hist(Echant_geo, probability = TRUE, col = "lightblue", 
+     main = "Distribution géométrique (n=100, p=0.3)",
+     xlab = "Valeurs", ylab = "Densité", border = "black")
+
+lines(density(Echant_geo), col = "blue", lwd = 2) # Courbe de densité
+
+
+legend("topright", legend = c("Courbe de densité"), 
+       col = c("blue", "red"), lwd = 2, lty = c(1,2), cex = 0.4)
+
+```
+
+- **Loi normale**
+
+```{r}
+
+# Histogramme et courbe de densité
+
+hist(Echant_normal, probability = TRUE, col = "lightblue", 
+     main = "Distribution d'un échantillon normal (n=100)",
+     xlab = "Valeurs", ylab = "Densité", border = "black",
+     xlim = c(-4, 4), breaks = 20)  
+lines(density(Echant_normal), col = "blue", lwd = 2) # Courbe de densité empirique
+
+# Courbe théorique de la loi normale
+curve(dnorm(x, mean = mu, sd = sigma), col = "red", lwd = 2, add = TRUE, lty = 2)
+
+# Personnalisation de l'axe des x
+axis(1, at = seq(-4, 4, by = 1))  # Ajoute des graduations tous les 1
+
+# Légende
+legend("topright", legend = c("Densité empirique", "Densité théorique"), 
+       col = c("blue", "red"), lwd = 2, lty = c(1,2), cex = 0.8)
+
+```
+
+**Conclusion : ** La loi de Student a une distribution proche de celle de loi normale, cela est d'autant plus une realité que les degrés de liberté sont élevés. La loi de Poisson tend egalement vers la normalité surtout pour des valeurs de lambda elevés( lambda > 30). Cependant, les lois exponentielle et géométrique sont très éloignées d'une distribution normale, elles nécessitent des transformations pour s'y conformer.
+
+## Exercice 2 : Statistique d'ordre
+
+```{r}
+stat_ordre = function(vector){
+              if(is.vector(vector)==TRUE) {
+                vect = sort(vector, decreasing = FALSE, na.last = TRUE)
+                return(vect)
+              } else {
+                print("Vous devez donner un vecteur")
+              }
+  }
+
+#Exemple:
+vec1 = c(5,2,-1,3) 
+a =stat_ordre(vec1)
+cat("Vecteur (", vec1, ") ", "ordonné :", a , "\n")
+```
+```{r}
+#Exemple sur un échantillon 
+set.seed(123) 
+# échantillon de 50 nombres uniques entre 1 et 100
+vec2 <- sample(1:100, 50, replace = FALSE)  
+cat("Echantillon : ", vec2, "\n", "\n")
+b =stat_ordre(vec2)
+cat( "Echantillon ordonné : ", b )
+```
+
+## Exercice 3 : Statistique de rang 
+
+```{r}
+#-------------------------------Fonction-Rang------------------------------#
+
+stat_rang <- function(vector) {
+  if (!is.vector(vector)) {
+    print("Vous devez donner un vecteur")
+    return(NULL)  
+  }
+  
+  vecteur <- numeric(length(vector)) 
+  
+  for (i in 1:length(vector)) {
+    compteur <- 0  
+    for (j in 1:length(vector)) {
+      if (vector[i] >= vector[j]) {
+        compteur <- compteur + 1
+      }
+    }
+    vecteur[i] <- compteur  
+  }
+  return(vecteur)  
+} 
+#---------------------------Exemple ------------------------------------#
+vecteur = c(5,2,-1,3) 
+rang=stat_rang(vecteur)
+rang
+```
+
+
+```{r}
+# Pour un echantillon : 
+
+set.seed(123) 
+ # echantillon de 50 nombres uniques entre 1 et 100
+echantillon <- sample(1:100, 50, replace = FALSE) 
+print(echantillon)
+rang_echantillon =stat_ordre(echantillon)
+rang_echantillon
+
+#------------------------------------------------------------------------------#
+
+# Avec la fonction rank  de r
+
+vecteur = c(5,2,-1,3)
+rank(vecteur)
+
+# En cas d'exoequo
+
+
+vecteur_2 = c(5,5,-1,3)
+rank(vecteur_2,)
+
+
+## Les options : average, first, last, random, max, min
+
+x2 = c(5,5,-1,3,3,2,4,3)
+
+## ranks without averaging
+rank(x2, ties.method= "average") 
+rank(x2, ties.method= "first")  # first occurrence wins
+rank(x2, ties.method= "last")   #  last occurrence wins
+rank(x2, ties.method= "random") # ties broken at random
+rank(x2, ties.method= "random") # and again
+```
+
+
+NB : Pour avoir le code de la fonction rank par exemple, il faut saisir la commande *print(rank).*
+
+## Exercice 4 : Fonction de répartition empirique 
+
+```{r, fig.width=4, fig.height=3, out.width="80%"}
+
+# Fonction pour calculer, retourner les valeurs et tracer la fonction de répartition 
+
+calculer_et_tracer_Fn <- function(vecteur) {
+  
+  vecteur_trie <- sort(vecteur)
+  
+  n <- length(vecteur)
+  
+  Fn_values <- sapply(vecteur_trie, function(x) sum(vecteur <= x) / n)
+  
+  Fn_data <- data.frame(x = vecteur_trie, Fn = Fn_values)
+  
+  print("Valeurs de la fonction de répartition empirique :")
+  print(Fn_data)
+  
+  plot(Fn_data$x, Fn_data$Fn, type = "s", xlab = "x", ylab = "Fn(x)", 
+       main = "Fonction de Répartition Empirique")
+  
+  return(Fn_data)
+}
+
+# Exemple d'utilisation
+
+set.seed(123)  
+vecteur <- rnorm(30)  
+resultat <- calculer_et_tracer_Fn(vecteur)
+
+```
+
+```{r}
+# Autre méthode pour tracer la fonction de répartition  et retourner les Fn
+
+vecteur <- rnorm(30)  
+plot(ecdf(vecteur))
+ecdf(vecteur)
+fn=ecdf(vecteur)
+fn(vecteur)
+fn(sort(vecteur)) # Pour ordonner les Fn
+```
+
+\newpage
+
+# \textcolor{blue}{CHAPITRE 2 : Tests non paramétriques pour 1 échantillon }
+
+## Tests de corrélation de rang de Spearman 
+
+### On considère les notes de base de données 2 ci-après :
+
+```{r}
+Notes <- c(10,8.5,7.5,8.5,11,9,8,8,13,11.5,10,10,11.5,11.5,10.5,11.5,14,6,6,9.5,
+           12,10.5,9,11.5,11,12.5,8.5,11,13,6,9.5,10.25,11.5,10,11.5,12,10,11.5,
+           12,9.5,8,7.5,8)
+plot(Notes)
+```
+
+
+**Commentaires du plot :** Les données semblent homogènes (faible écart-type et coefficient de variation) et on n'en dégage pas de tendance a priori. Vérifions cela à l'aide de tests de corrélation de rangs de Spearman.
+
+- **Tendance croissante : **
+
+On veut tester $H_0$ : les données sont aléatoires et i.i.d contre $H_1$: on a une tendance croissante dans les données. 
+
+```{r, warning=FALSE, message=FALSE}
+# Vecteur rang
+rang <- rank(Notes) 
+# Vecteur d'indices
+i= 1:length(Notes)
+# Dataframe des indices, notes et rangs
+data <- data.frame(i, Notes, rang)
+#Test de corrélation des rangs de Spearmann
+cor.test(data$i, data$rang, 
+         alternative="g", #tendance croissante
+         method="spearman" )
+```
+
+$r_s$ vaut **0.08** et la p-value est de **0.3**. On ne peut rejeter $H_0$ au seuil de 5%.  
+
+**NB :** $S = \sum_{i=1}^{n} \left(R_i - i\right)^2 = 12179$
+
+- **Tendance décroissante :** 
+
+On veut tester $H_0$ : les données sont aléatoires et i.i.d contre $H_1$: on a une tendance décroissante dans les données. 
+
+```{r, warning=FALSE, message=FALSE}
+cor.test (data$i, data$Notes, alternative = "l", method= "s")
+```
+
+- **Tendance quelconque :** 
+
+On veut tester $H_0$ : les données sont aléatoires et i.i.d contre $H_1$: on a une tendance quelconque dans les données. 
+
+```{r}
+cor.test (data$i, data$Notes, alternative = "two.sided", method= "s")
+```
+
+On a les mêmes conclusions dans les 2 derniers cas. On ne peut rejeter $H_o$ au seuil de 5%. 
+
+### On considère les 15 premières observations. 
+
+```{r, warning=FALSE, message=FALSE}
+data1<- data[1:15,1:2] 
+plot(data1)
+```
+
+Il semblerait y avoir une tendance croissante. Par ailleurs, le nombre d'observations est inférieur à 30. On ne peut utiliser le cor.test ici. 
+
+```{r}
+data1$rang <- rank(data1$Notes)
+n<- length(data1$i)
+# calcul de rs
+somme <-sum((data1$rang-data1$i)^2) 
+rs <- 1- 6*somme/(n*(-1 + n^2 ))
+# calcul de rs'(que nous notons rs1)
+rs1 <- rs*sqrt((n-2)/(1-rs^2))
+#t de Student pour rs1
+t<- qt(0.95,13)
+#Affichage des résultats
+cat("rs = ", rs, "\n")
+cat("rs' = ", rs1, "\n")
+cat("t (13, 0.95) = ", t, "\n")
+
+```
+
+On obtient que $rs' > t$. Au vu de l'évidence des données, on peut rejeter $H_0$ au seuil de 5%. 
+
+## Test de Kendall 
+
+### Données 
+
+Le test de Kendall permet de repérer une tendance dans un ensemble de données, sans supposer que celles-ci suivent une loi normale. Il se base sur les rangs pour mesurer s’il y a une progression ou une diminution régulière.
+
+À partir des données fournies dans l’exercice du cours, nous allons appliquer ce test pour voir s’il existe une tendance significative
+
+```{r}
+vecteur2=c(8.1,7.3,6.4,5.1,5.4,4.3,3.8,4.9,5.2,6.5,7.8,7.6,9.3)
+
+inversion <- function(vecteur){
+  n=length(vecteur)
+  total <-0
+  total2 <-0
+  for (i in 1:(n-1)) {
+    som1 <- 0
+    som2 <- 0
+    for (j in (i+1):n) {
+      if (vecteur[i] > vecteur[j]) {
+        som1 <- som1 + 1 
+      }
+      if (vecteur[i] < vecteur[j]){ 
+        som2 <- som2 + 1 
+      }
+    }
+    total <- total + som1
+    total2 <- total2 + som2
+  }
+  S= total2 - total
+  return(c(total, S, n))
+}
+
+resultat = inversion(vecteur2)
+Q <- resultat[1]
+S <- resultat[2]
+n <- resultat[3]
+```
+
+- Visualisation des données
+
+```{r}
+plot (1:n, vecteur2, type = "b", col = "blue", pch = 19,
+     xlab = "Index", ylab = "Valeur", main = "Évolution des valeurs de vecteur2")
+lines(lowess(1:n, vecteur2), col = "red", lwd = 2)  # Tendance lissée
+legend("topleft", legend = c("Valeurs", "Tendance (LOWESS)"), 
+       col = c("blue", "red"), lwd = c(1, 2), pch = c(19, NA), lty = c(1, 1))
+```
+
+### Utilisation de la fonction cor.test avec Kendall
+
+```{r}
+Ri = rank(vecteur2)
+i = 1:n
+cor.test(Ri, i, alternative = "greater", method = "kendall")
+```
+
+### Espérance et variance de Q
+ 
+- **Formule de calcul de l'espérance :** $$ \mathbb{E}[Q]= \dfrac{n(n−1)}{4}$$
+
+- **Formule de calcul de la variance :** $$Var(Q)= \dfrac{n(n−1)(2n+5)}{72}$$
+
+```{r}
+E_Q <- n*(n-1)/4
+V_Q <- n*(n-1)*(2*n+5)/72
+E_Q; V_Q
+```
+
+### Tau de Kendall
+
+- **Formule de Calcul du tau de Kendall : **   
+
+$$\tau = \dfrac{1 - 4Q}{n(n - 1)}$$
+
+- **Espérance du tau de kendall :** $$\mathbb {E} [\tau] = 0$$
+
+- **Variance du taux :** $$Var(\tau)= \dfrac{2(2n+5)}{9n(n−1)}$$
+
+
+```{r}
+tau = 1 - 4*Q / (n*(n-1))
+E_tau = 0
+V_tau = 2*(2*n+5) / (9*n*(n-1))
+tau; V_tau
+```
+
+### Test statistique
+
+- **Méthode 1 : test direct manuel**
+
+Statistique de test normalisée : 
+
+$$ Z = \dfrac{τ−E[τ]}{ \sqrt{Var(\tau)} }$$
+
+Cette statistique sera comparée par la loi normale $N(0,1)$ pour déterminer si l’on rejette l’hypothèse nulle.
+
+```{r}
+tau_centre = (tau - E_tau) / sqrt(V_tau)
+tau_centre
+
+if (tau_centre > qnorm(0.975) | tau_centre < -qnorm(0.975)) {
+  "On rejette H0 (bilatéral) : tendance significative."
+} else {
+  "On ne rejette pas H0 (bilatéral)."
+}
+
+if (tau_centre > qnorm(0.95)) {
+  "On rejette H0 (unilatéral à droite) : ordre positif significatif."
+} else {
+  "On ne rejette pas H0 (unilatéral à droite)."
+}
+```
+
+- **Méthode 2 : test Kendall intégré**
+
+La fonction cor.test() a été utilisée pour estimer la corrélation non paramétrique de Kendall entre les indices (1 à n) et les valeurs de vecteur2.
+
+Si la statistique tau est positive, cela suggère une tendance croissante ; si elle est négative, cela indiquerait une tendance décroissante.
+
+Cependant, si la p-value est supérieure au seuil de 5 %, cette tendance n’est pas statistiquement significative.
+
+Ainsi, si la p-value dépasse ce seuil, on ne rejette pas l’hypothèse nulle d’absence de tendance monotone entre les valeurs et leur ordre.
+
+```{r}
+cor.test(1:n, vecteur2, method = "kendall")
+```
+
++ Calcul de la p-value :
+
+$$p-value = 2 \times P(Z>|z_{obs}|)=2  \times (1− Φ(∣Z∣)$$
+
+Si p_value < 0.05 : on rejette l’hypothèse nulle au seuil de 5 % . Il y a une tendance significative dans les données.
+
+Si p_value > 0.05 : on ne rejette pas $H_0$. Il n’y a pas de preuve suffisante d'une tendance monotone dans les observations.
+
+```{r}
+p_value = 2 * pnorm(tau_centre, lower.tail = FALSE)
+p_value
+
+``` 
+
+## Test de signe 
+
+### Principe 
+
+Le principe de ce test est similaire au test de Kendall. Sous l’hypothèse d’indépendance et d’identité de distribution (i.i.d.), i.e. sous \( H_0 \), chaque observation a une chance sur deux de dépasser l’observation qui la précède :
+
+$$
+\mathbb{P}(X_{i+1} > X_i) = \mathbb{P}(X_{i+1} < X_i) = \frac{1}{2}
+$$
+
+La statistique de test est définie par :
+
+$S = \sum_{i=1}^{n-1} \mathbb{I}(X_i > X_{i+1})$
+
+où \( \mathbb{I}(\cdot) \) est la fonction indicatrice. La statistique \( S \) représente donc le **nombre de différences positives inversées** dans l’échantillon.
+
+- Si \( X_1 < X_2 < \dots < X_n \) (tendance croissante parfaite), alors \( S = 0 \)
+- Si \( X_1 > X_2 > \dots > X_n \) (tendance décroissante parfaite), alors \( S = n - 1 \)
+
+### Loi de \( S \) sous \( H_0 \)
+
+**Espérance :**
+
+$$
+\mathbb{E}(S) = \mathbb{E}\left( \sum_{i=1}^{n-1} \mathbb{I}(X_i > X_{i+1}) \right)
+= \sum_{i=1}^{n-1} \mathbb{P}(X_i > X_{i+1}) = \frac{n - 1}{2}
+$$
+
+En posant \( Z_i = \mathbb{I}(X_i > X_{i+1}) \), on a \( S = \sum_{i=1}^{n-1} Z_i \).
+
+**Variance :**
+
+$$
+\mathbb{V}(S) = \sum_{i=1}^{n-1} \mathbb{V}(Z_i) + \sum_{i \ne j} \mathrm{Cov}(Z_i, Z_j)
+$$
+
+Il a été démontré que : $\mathbb{V}(S) = \frac{n + 1}{12}$
+
+### Distribution asymptotique de \( S \)
+
+Pour les petits échantillons (\( n \leq 12 \)), on utilise la loi exacte de \( S - \mathbb{E}(S) \), tabulée par **Moove et Wallis** (voir aussi table 16 de **Phillips-Tessi**).
+
+- Lorsque \( n \to \infty \), on a l’approximation normale suivante :
+
+$$
+\frac{S - \frac{n - 1}{2}}{\sqrt{ \frac{n + 1}{12} }} \sim \mathcal{N}(0, 1)
+$$
+
+Avec **correction de continuité** :
+
+$$
+\left| S - \frac{n - 1}{2} - \frac{1}{2} \right| > z_{1 - \frac{\alpha}{2}} \cdot \sqrt{ \frac{n + 1}{12} }
+$$
+
+où \( z_{1 - \alpha/2} \) est le quantile de la loi normale tel que :
+
+$$
+\mathbb{P}(|Z| > z_{1 - \alpha/2}) = \alpha \quad \text{avec} \quad Z \sim \mathcal{N}(0, 1)
+$$
+
+**Remarque** : la correction de \( -\frac{1}{2} \) est utilisée pour approximer une loi discrète (ici celle de \( S \)) par une loi continue (la loi normale).
+
+$$
+\mathbb{P}(X_{i+1} > X_i) = \mathbb{P}(X_{i+1} < X_i) = \frac{1}{2}
+$$
+
+La statistique de test est définie par :
+
+$$
+S = \sum_{i=1}^{n-1} \mathbb{I}(X_i > X_{i+1})
+$$
+
+où \( \mathbb{I}(\cdot) \) est la fonction indicatrice. La statistique \( S \) représente donc le **nombre de différences positives inversées** dans l’échantillon.
+
+Si \( X_1 < X_2 < \dots < X_n \) (tendance croissante parfaite), la statistique de test compte le nombre de différences positives. 
+
+
+### Données et visualisation
+
+```{r}
+data=c(8.1,7.3,6.4,5.1,5.4,4.3,3.8,4.9,5.2,6.5,7.8,7.6,9.3)
+data
+```
+
+```{r}
+plot(data)
+```
+
+### Ecriture de la fonction de statistique de signe S
+
+```{r}
+Signe <- function(data){
+n=length(data)
+total <-0
+for (i in 1:(n-1)) {
+if (data[i] > data[i+1]) {
+total <- total + 1
+}
+}
+return(total)
+}
+```
+
+### Application sur les données
+
+```{r}
+
+resultat=Signe(data)
+S=resultat
+```
+
+### Calcul de l'Espérance et de la variance de S
+
+```{r}
+n=length(data)
+E<- (n-1)/2
+E
+```
+
+```{r}
+V <- (n+1)/12
+V
+```
+
+On a n =13 > 12 donc on approxime la loi de S par la loi normale centrée et réduite
+
+### Approximation par la loi normale
+
+```{r}
+Z =(S - E- (1/2))/ sqrt(V)
+Z
+```
+
+- **Pour un test bilateral**
+
+```{r}
+if (Z>qnorm(0.975, 0,1) | Z < -qnorm(0.975, 0,1)) {
+"On rejette l'hypothese nulle : il y a une tendance."
+} else {
+"On ne peut pas rejetter l'hypothese nulle : pas de tendance ."
+}
+```
+
+```{r}
+
+plot(data)
+```
+
+- **Pour un test unilatéral à gauche**
+
+```{r}
+if (Z< -qnorm(0.95, 0,1) ) {
+"On rejette l'hypothese nulle : dépendance négative."
+} else {
+"On ne peut pas rejetter l'hypothèse nulle"
+}
+```
+
+- **Pour un test unilatéral à droite**
+
+```{r}
+if (Z>qnorm(0.95, 0,1) ) {
+"On rejette l'hypothese nulle : dépendance positive."
+} else {
+"On ne peut pas rejetter l'hypothèse nulle"
+}
+```
+
+**Commentaire :** Dans ces trois cas, Z n’appartient pas à la région critique Donc on ne peut pas rejetter H0 : iid.
+
+- **Avec la p-value pour un test bilatéral par exemple**
+
+```{r}
+p_value = 2*(1-pnorm(Z, 0,1,lower.tail = FALSE ))
+p_value
+```
+
+**Conclusion :** Comme la p-value est supérieur à 0.05 , on ne rejette pas Ho. 
+
+## Test des séquences homogènes
+
+Une séquence homogène est un groupe consécutif d'éléments identiques dans une série de données.
+
+Exemple : dans la séquence `AAABBAAAB`, il y a trois séquences homogènes : `AAA`, `BB`, et `AAAA`.
+
+Le test des séquences homogènes est utilisé pour déterminer si une série de données présente une tendance monotone (croissante ou décroissante) ou si elle est aléatoire.
+
+Les hypothèses du test des séquences homogènes sont les suivantes :
+
+-   $H_0$ : la série de données est aléatoire, sans tendance monotone.
+-   Alternative unilatérale à droite : $H_1$ : la série de données est croissante.
+-   Alternative unilatérale à gauche : $H_1$ : la série de données est décroissante.
+-   Alternative bilatérale : $H_1$ : la série de données présente une tendance monotone quelconque.
+
+### Principe du test
+
+Si une série de données contient une **tendance monotone** (croissante ou décroissante), les valeurs successives auront tendance à rester **au-dessus ou en dessous** d'une **valeur de référence**. On utilise en général la **médiane** de la série, notée $\lambda$, comme seuil.
+
+On transforme les données selon :
+
+$$
+A_i = \begin{cases}
+A & \text{si } X_i \geq \lambda \\
+B & \text{si } X_i < \lambda
+\end{cases}
+$$
+
+On dénombre ensuite le **nombre de séquences homogènes** : ce sont les blocs consécutifs de A ou de B.
+
+### Données
+
+```{r}
+(x <- c(8.1, 7.3, 6.4, 5.1, 5.4, 4.3, 3.8, 4.9, 5.2, 6.5, 7.8, 7.6, 9.3))
+```
+
+### Calcul de la médiane 
+
+```{r}
+(lambda <- median(x))
+```
+
+### Création de la suite A/B
+
+```{r}
+(X_bin <- ifelse(x >= lambda, 'A', 'B'))
+```
+
+```{r}
+df <- data.frame(index = 1:length(x), valeur = x, catégorie = X_bin)
+# Représentation graphique avec ligne reliant les points
+ggplot(df, aes(x = index, y = valeur, color = catégorie, group = 1)) +
+  geom_line(color = "gray50", linewidth = 1) +       # Ligne reliant les points
+  geom_point(size = 4) +                              # Points individuels
+  geom_hline(yintercept = lambda, linetype = "dashed", color = "black") + # Ligne seuil
+  annotate("text", x = length(x)-1, y = lambda + 0.5, 
+           label = paste("Seuil =", lambda), hjust = 1) +
+  labs(title = "Visualisation de la séquence avec seuil (médiane)",
+       x = "Position dans la séquence",
+       y = "Valeur") +
+  scale_color_manual(values = c("blue", "red")) +
+  theme_minimal()
+```
+
+D'après la figure on observe de deux séquences homgènes de A et deux sequences homogènes de B donc notre statistique de test devrait être égale à 4.
+
+Cependant , formellement , elle est construite de cette manière : On considère une série $(X_1, X_2, \ldots, X_n)$ et une valeur seuil $X_0$.
+
+On définit la variable $Z_i$ par :
+
+$$
+Z_i =
+\begin{cases}
+1 & \text{si } X_i \text{ et } X_{i+1} \text{ sont différentes (AB ou BA)} \\
+0 & \text{sinon (AA ou BB)}
+\end{cases}
+$$
+
+La statistique de test est donnée par :
+
+$$
+S = \sum_{i = 1}^{n - 1} Z_i + 1
+$$
+
+avec p le nombre d'éléments de A, m le nombre d'éléments de B et n=m+p .
+
+### Calcul de la Statistique de test : nombre de séquences homogènes (S)
+
+Ici on compte les changements de groupe (AB ou BA) :
+
+#### Commençons par calculer p, m, et n
+
+```{r}
+# Nombre de séquences homogènes
+# p : nombre de A
+# m : nombre de B
+# n : taille de la séquence
+
+p <- sum(X_bin == 'A')
+m <- sum(X_bin == 'B')
+n <- length(X_bin)
+p
+m
+n
+```
+
+#### Valeur de la Statistique de test 
+
+```{r}
+S <- 1 + sum(as.numeric(X_bin[-1] != X_bin[-n]))
+S
+```
+
+Pour de petits échantillons ( p et m inferieur à 20), on utilise la table de **Swed et Eisenhart** et pour de grands échantillons, on utilise l 'approximation avec la loi normale. Cependant même pour de petits échantillons, on peut faire l'approximation par la loi normale.
+
+Manuellement dans notre cas ou on a m=p=7 et Sur la table de **Swed et Eisenhart** on trouve que la region de rejet est S\<=4 et S \>=13 donc on rejette l'hypothèse nulle. Cela signifie que l'échantillon n'est pas iid.
+
+Nous passons ensuite à l'approximation de la loi normale.
+
+### Approximation avec la loi normale
+
+- **Espérance et variance sous Ho**
+
+$$
+\mathbb{E}(S) = \frac{2pm}{n} + 1
+\quad , \quad
+\text{Var}(S) = \frac{2pm(2pm - n)}{n^2(n - 1)}
+$$
+
+```{r}
+E_S <- 2 * p * m / n + 1
+Var_S <- (2 * p * m * (2 * p * m - n)) / (n^2 * (n - 1))
+E_S
+Var_S
+```
+
+- **Statistique de test (approximation normale)**
+
+$$
+Z = \frac{S - \mathbb{E}(S)}{\sqrt{\text{Var}(S)}} \sim N(0, 1)
+$$
+
+```{r}
+Z <- (S - E_S) / sqrt(Var_S)
+Z
+```
+
+- **p-value bilatérale**
+
+```{r}
+2 * (1 - pnorm(abs(Z)))
+```
+
+On rejette $H_0$ pour alpha= 0.05.
+
+### Test automatisé avec R
+
+- **Utilisation du package `randtests`**
+
+```{r, message=FALSE, warning=FALSE}
+library(randtests)
+```
+
+- **Mise en oeuvre du test**
+
+Lorsque la moyenne figure parmi les observations, les résultats du test peuvent différer de ceux de la fonction `runs.test`, laquelle scinde les données en comparant strictement chaque valeur à la médiane.
+
+```{r}
+randtests::runs.test(x, threshold = median(x),
+                     alternative = "two.sided", pvalue = "normal")
+```
+
+**Interprétation : ** Si la **p-value est petite** (\< 0.05), on **rejette H₀** : présence probable d’une **tendance**. Sinon, on **ne rejette pas H₀** : l'échantillon est iid.
+
+Comme la p-value est inférieure à 0.05 alors on conclut qu'il y a la présence d'une tendance monotone.
+
+**Table de Swed et Eisenhart**
+
+\includepdf[pages=1]{table_sequence_homogene.pdf}
+
+## Test de localisation : test du signe 
+
+```{r}
+vecteur <- seq(-5, 5, length.out = 100)
+```
+
+### Statistique de test
+
+```{r}
+sta_test <- function(x) {
+  # Vérifier que c'est un vecteur numérique
+  if (!is.numeric(x) || !is.vector(x)) {
+    stop("L'entrée doit être un vecteur numérique.")
+  }
+  
+  # Calcul des rangs avec moyenne en cas d'égalité
+  rangs <- rank(x, ties.method = "average")
+  
+  # Filtrer les indices des éléments positifs
+  indices_positifs <- which(x > 0)
+  
+  # Extraire les rangs correspondants aux valeurs positives
+  rangs_positifs <- rangs[indices_positifs]
+  
+  # Retourner la somme des valeurs absolues de ces rangs
+  return(sum(abs(rangs_positifs)))
+}
+```
+
+### Test avec la loi normale
+
+```{r}
+
+# Fonction principale de test
+test_normal <- function(x, alpha = 0.05, type = "bilateral") {
+  if (!type %in% c("bilateral", "gauche", "droite")) {
+    stop("Le type de test doit être 'bilateral', 'gauche' ou 'droite'.")
+  }
+  
+  # Statistique brute
+  stat <- sta_test(x)
+  
+  # Moyenne et variance de x
+  moyenne <- mean(x)
+  variance <- var(x)
+  
+  if (variance == 0) {
+    stop("La variance du vecteur est nulle. Le test n'est pas applicable.")
+  }
+  
+  # Statistique normalisée
+  T_stat <- (stat - moyenne) / sqrt(variance)
+  
+  # Comparaison selon le type de test
+  decision <- ""
+  if (type == "bilateral") {
+    seuil <- qnorm(1 - alpha / 2)
+    decision <- ifelse(abs(T_stat) > seuil, "Rejeter H0", "Ne pas rejeter H0")
+  } else if (type == "droite") {
+    seuil <- qnorm(1 - alpha)
+    decision <- ifelse(T_stat > seuil, "Rejeter H0", "Ne pas rejeter H0")
+  } else if (type == "gauche") {
+    seuil <- qnorm(alpha)
+    decision <- ifelse(T_stat < seuil, "Rejeter H0", "Ne pas rejeter H0")
+  }
+  
+  # Résultat
+  return(list(
+    statistique = T_stat,
+    seuil = seuil,
+    decision = decision
+  ))
+}
+
+```
+
+```{r}
+test_normal(vecteur)
+```
+
+## Test de Wilcoxon : avec la fonction de R
+
+```{r}
+# Fonction de test utilisant le test de Wilcoxon
+test_wilcoxon <- function(x, alpha = 0.05, type = "bilateral") {
+  if (!is.numeric(x) || !is.vector(x)) {
+    stop("L'entrée doit être un vecteur numérique.")
+  }
+  
+  if (!type %in% c("bilateral", "gauche", "droite")) {
+    stop("Le type de test doit être 'bilateral', 'gauche' ou 'droite'.")
+  }
+  
+  # Traduction du type de test pour wilcox.test()
+  alternative <- switch(type,
+                        "bilateral" = "two.sided",
+                        "gauche" = "less",
+                        "droite" = "greater")
+  
+  # Test de Wilcoxon signé
+  test <- wilcox.test(x, mu = 0, alternative = alternative, exact = FALSE, 
+                      correct = FALSE)
+  
+  # Décision
+  decision <- ifelse(test$p.value < alpha, "Rejeter H0", "Ne pas rejeter H0")
+  
+  # Résultat
+  return(list(
+    statistique = test$statistic,
+    p_value = test$p.value,
+    decision = decision
+  ))
+}
+
+```
+
+
+```{r}
+test_wilcoxon(vecteur)
+```
+
+\newpage
+
+# \textcolor{blue}{Chapitre 3 : Tests non paramétriques pour 2 échantillons} 
+
+## Tests d'indépendance 
+
+### Test de Spearman 
+
+On dispose de deux échantillons X et Y  appariées. 
+On veut tester H0: X et Y sont indépendants contre H1: X et Y sont dépendants.
+
+La statistique de test considérée est donnée par: 
+
+$$ T= \sum_{i=1}^n R_iS_i  $$
+Avec $R_i$ et $S_i$ qui sont les rangs de l'observation $i$ dans X et Y. 
+
+- **Fonction manuelle**
+
+```{r}
+spearman_test_manual <- function(X, Y, alternative = "two.sided", alpha = 0.05) {
+  n <- length(X)
+  if (length(Y) != n) stop("Les variables doivent avoir la même longueur")
+  
+  # 1. Vérification du paramètre alternative
+  alternative <- match.arg(alternative, c("two.sided", "greater", "less"))
+  
+  # 2. Calcul des rangs avec gestion des ex-aequo
+  rank_X <- rank(X, ties.method = "average")
+  rank_Y <- rank(Y, ties.method = "average")
+  
+  # 3. Calcul de la statistique T = Σ(Ri * Si)
+  T_stat <- sum(rank_X * rank_Y)
+  
+  # 4. Correction pour les ex-aequo
+  correct_ties <- function(ranks) {
+    tied_groups <- table(ranks)
+    sum(tied_groups^3 - tied_groups) / 12
+  }
+  TX <- correct_ties(rank_X)
+  TY <- correct_ties(rank_Y)
+  
+  # 5. Calcul de la variance
+  mean_rank <- (n + 1)/2
+  SS_R <- sum(rank_X^2) - n * mean_rank^2
+  SS_S <- sum(rank_Y^2) - n * mean_rank^2
+  var_T <- (SS_R*SS_S)/(n-1) - (TX*TY)/(n-1) + (TX*SS_S + TY*SS_R)/(n*(n^2 - 1))
+  # Note: Sans ex-aequo, Var(T) = (SS_R * SS_S)/(n-1) = n²(n+1)²(n-1)/144
+  
+  # 6. Statistique de test
+  mu_T <- n * mean_rank^2
+  Z <- (T_stat - mu_T)/sqrt(var_T)
+  
+  # 7. Calcul du coefficient de Spearman
+  rho <- (12 * (T_stat - mu_T))/(n^3 - n - 12*(TX + TY) + 12*(TX*TY)/(n-1))
+  
+  # 8. Valeurs critiques et p-value selon l'alternative
+  if (alternative == "two.sided") {
+    Z_critical <- qnorm(1 - alpha/2)
+    p_value <- 2 * pnorm(-abs(Z))
+    decision_rule <- paste("|Z| >", round(Z_critical, 4))
+  } else if (alternative == "greater") {
+    Z_critical <- qnorm(1 - alpha)
+    p_value <- pnorm(Z, lower.tail = FALSE)
+    decision_rule <- paste("Z >", round(Z_critical, 4))
+  } else { # "less"
+    Z_critical <- qnorm(alpha)
+    p_value <- pnorm(Z)
+    decision_rule <- paste("Z <", round(Z_critical, 4))
+  }
+  
+  # 9. Décision
+  decision <- ifelse(
+    (alternative == "two.sided" & abs(Z) > Z_critical) |
+      (alternative == "greater" & Z > Z_critical) |
+      (alternative == "less" & Z < Z_critical),
+    paste("Rejeter H0 au seuil", alpha),
+    paste("Ne pas rejeter H0 au seuil", alpha)
+  )
+  
+  # Affichage des résultats
+  cat("Test de Spearman Manuel\n")
+  cat("-----------------------\n")
+  cat("Type de test    :", switch(alternative, "two.sided" = "Bilatéral (dépendance quelconque)", "greater" = "Unilatéral droit (dépendance positive)", "less" = "Unilatéral gauche (dépendance négative)"), "\n")
+  cat("Statistique T   :", round(T_stat, 4), "\n")
+  cat("Statistique Z   :", round(Z, 4), "\n")
+  cat("Valeur critique :", round(Z_critical, 4), "\n")
+  cat("Règle de décision:", decision_rule, "\n")
+  cat("p-value         :", sprintf("%.6f", p_value), "\n")
+  cat("Coefficient ρ   :", round(rho, 4), "\n")
+  cat("Décision        :", decision, "\n")
+  cat("-----------------------\n")
+  
+  return(list(
+    alternative = alternative,
+    T_stat = T_stat,
+    Z = Z,
+    Z_critical = Z_critical,
+    p_value = p_value,
+    rho = rho,
+    decision = decision
+  ))
+}
+```
+
+
+
+- **Exemple d'application et comparaison avec la fonction intégrée de R**
+
+
+Ce test doit normalement être effectué avec au moins 30 observations. mais nous utilisons juste les données de l'exemple d'application du cours ici.
+
+ + **Données et visualisation**
+
+```{r}
+# ----------------------------
+# 1. Données de l'application du cours
+# ----------------------------
+
+data <- data.frame(
+  ID= c(1,2,3,4,5,6,7,8,9,10,11,12),
+  X= c(1,1,2,2,3,4,5,6,7,8,8,12),
+  Y= c(12,16,9,7,35,58,56,26,32,59,24,51))
+
+# ----------------------------
+# 2. REPRÉSENTATION GRAPHIQUE
+# ----------------------------
+library(ggplot2)
+
+ggplot(data, aes(x = ID)) +
+  geom_line(aes(y = X, color = "X"), linewidth = 1) +
+  geom_line(aes(y = Y, color = "Y"), linewidth = 1) +
+  geom_point(aes(y = X), color = "blue", size = 3) +
+  geom_point(aes(y = Y), color = "red", size = 3) +
+  scale_color_manual(values = c("X" = "blue", "Y" = "red")) +
+  labs(title = "Évolution conjointe de X et Y",
+       x = "ID des observations",
+       y = "Valeurs") +
+  theme_minimal()
+
+```
+
+On a l'impression que les deux echantillons sont indépendants car X a une tendance plutôt croissante tandis que Y croit puis décroit de temps à autre. toutefois, les tendances des deux échantillons sont globalement croissantes. Voyons les résultats fournis par les tests.
+
++ **Tests**
+
+```{r}
+# ----------------------------
+#  TEST INTÉGRÉ DE SPEARMAN ET TEST MANUEL
+# ----------------------------
+# Choisir l'alternative en fonction du graphique: "two.sided", "greater", ou "less"
+
+alternative_choice <- "two.sided" 
+
+result_manual <- spearman_test_manual(data$X, data$Y, alternative = alternative_choice)
+result_builtin <- cor.test(data$X, data$Y, method = "spearman", exact = FALSE, 
+                           alternative = alternative_choice)
+
+
+# ----------------------------
+#  COMPARAISON DES RÉSULTATS
+# ----------------------------
+
+cat("\n=== Résultats du test intégré ===\n")
+print(data.frame(
+  Coefficient_rho = result_builtin$estimate,
+  P_value = result_builtin$p.value,
+  Méthode = result_builtin$method
+))
+
+```
+
+Les deux tests rejettent H0 au seuil 0.05. donc il y a dépendance entre les deux échantillons au seuil 0.05. Mais si on prend un faible risque comme 1%, on ne va plus rejeter H0, donc les 2 échantillons seront indépendants dans ce cas là, ce qui est en ligne avec l'observation faite sur le graphique. 
+
+### Test de Kendall: cas apparié
+
+- **Données**
+
+```{r}
+# Données du cours
+x <- c(1,1,2, 2, 3, 4, 5, 6, 7, 8, 8, 12)
+y <- c(12, 16, 9, 7, 35, 58, 56, 26, 32, 59, 24, 51)
+```
+
+- **Visualisation**
+
+```{r}
+# Génération de l'indice i
+i <- 1:length(x)
+
+# Tracé des deux courbes
+plot(i, x, type = "o", col = "blue", pch = 16, ylim = range(c(x, y)),
+     xlab = "Indice (i)", ylab = "Valeurs", main = "Évolution de xᵢ et yᵢ")
+lines(i, y, type = "o", col = "red", pch = 17, lty = 2)
+
+# Légende
+legend("topright", legend = c("xᵢ", "yᵢ"),
+       col = c("blue", "red"), pch = c(16, 17), lty = c(1, 2))
+grid()
+
+```
+
+
+Le principe est le même que dans le cas d’un échantillon. On regarde le nombre de paires concordantes entre (Xi,Yi) et (Xj,Yj).
+
+
+- **Hypothèses :**
+
+$$
+\begin{cases} 
+H_0 : \text{Les données sont iid} \\ 
+H_1 : \text{les données ne sont pas iid}
+\end{cases}
+$$
+
+- **La statistique de Kendal**
+
+  + **Calcul de Q**
+
+Il y’a concordante entre ces deux couples si :
+
+$(Xi −Xj)(Yj −Yi) > 0$ i.e  $Xj > Xi$ et $Yj > Yi$ ou $Xj < Xi$ et $Yj < Yi$
+
+Donc on a:
+
+$$
+Q = \sum_{i=1}^{n-1} \sum_{j=i+1}^{n} \mathbb{1}\left[(x_j - x_i)(y_j - y_i) > 0\right]
+$$
+
+```{r}
+QKendall <- function(x, y) {
+  n <- length(x)
+  count <- 0
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      if ((x[j] - x[i]) * (y[j] - y[i]) > 0) {
+        count <- count + 1
+      }
+    }
+  }
+  return(count)
+}
+print("le Q Kendall est : ")
+QKendall(x,y)
+```
+
+
+
++ **Calcul du $\tau$**
+
+On pose: $\tau = 1 - \frac{4Q}{n(n-1)}$
+
+
+```{r}
+StatTest <- function(x, y) {
+  n <- length(x)
+  Q <- QKendall(x, y)
+  tau <- 1 - (4 * Q) / (n * (n - 1))
+  return(tau)
+}
+
+tau <- StatTest(x, y)
+tau
+
+```
+
+Pour n assez grand, la valeur Z observée se calcule comme suit :
+
+$$
+Z_{obs} = \frac{\tau - \mathbb{E}(\tau)}{\sqrt{Var(\tau)}}
+$$
+
+Avec:
+
+
+$$
+E(\tau) = 1 - \frac{4n(n-1)}{4n(n-1)} = 0
+$$
+
+$$
+V(\tau) = \frac{2(2n+5)}{9n(n-1)}
+$$
+
+```{r}
+Zobs <- function(x, y) {
+  n <- length(x)
+  tau <- StatTest(x, y)
+  variance_tau <- (2 * (2 * n + 5)) / (9 * n * (n - 1))
+  z <- tau / sqrt(variance_tau)
+  return(z)
+}
+
+z_obs <- Zobs(x, y)
+z_obs
+
+```
+
+
+- **Région critique et prise de décision**
+
+Soit un seuil de signification $\alpha$ donné. La statistique de test $Z_{\text{obs}}$ suit approximativement une loi normale $\mathcal{N}(0,1)$ sous l’hypothèse nulle $(H_0)$.  
+
+#### Test bilatéral 
+
+$$
+\text{Rejeter } H_0 \text{ si } |Z_{\text{obs}}| > z_{1 - \alpha/2}
+$$
+```{r}
+Kendall_Test <- function(risque, x, y) {
+  zobs <- Zobs(x, y)
+  seuil <- qnorm(1 - risque / 2)  # Bilatéral
+
+  cat("Z observé =", round(zobs, 3), "\n")
+  cat("Seuil critique (bilatéral) =", round(seuil, 3), "\n")
+  
+  if (abs(zobs) > seuil) {
+    print("On rejette H0 : Il existe une dépendance significative entre X et Y.")
+  } else {
+    print("On ne rejette pas H0 : Pas de dépendance significative entre X et Y.")
+  }
+}
+Kendall_Test(0.1, x, y)
+```
+
+Pour n faible alors : 
+
+- **Définition de la statistique S**
+
+On a :
+- $Q$ : nombre de paires **concordantes**
+- $Q'$ : nombre de paires **discordantes**
+
+```{r}
+# Fonction qui retourne les valeurs de Q (concordant), Q' (discordant), et S
+SKendall <- function(x, y) {
+  n <- length(x)
+  Q_concordant <- 0
+  Q_discordant <- 0
+  
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      produit <- (x[j] - x[i]) * (y[j] - y[i])
+      
+      if (produit > 0) {
+        Q_concordant <- Q_concordant + 1
+      } else if (produit < 0) {
+        Q_discordant <- Q_discordant + 1
+      }
+      # si produit == 0 → égalité → on ignore
+    }
+  }
+  
+  S <- Q_discordant - Q_concordant
+  
+  return(list(
+    Q_concordant = Q_concordant,
+    Q_discordant = Q_discordant,
+    S = S
+  ))
+}
+result=SKendall(x,y)
+
+print(paste("Q concordant =", result$Q_concordant))
+print(paste("Q discordant =", result$Q_discordant))
+print(paste("S =", result$S))
+```
+
+
+- **Test bilatéral** : $\text{Rejeter } \quad H_0 \quad \text{ si } |S| > s $
+
+D'après la table de Kendall S= 28 donc on ne rejette pas $H_0$.
+
+#### Avec la fonction intégrée R
+
+```{r warning=FALSE, message= FALSE}
+cor.test(x, y, method = "kendall", exact = TRUE)
+```
+
+## Tests d'alternative de position 
+
+### Test de Wilcoxon 
+
+
+Le test de Wilcoxon permet de comparer la position (typiquement la médiane) de deux échantillons pour évaluer s’ils proviennent de populations ayant le même paramètre de position.
+
+Hypothèse nulle $(H_0)$ : Les deux groupes ont la même distribution, donc le même paramètre de position (médiane).
+
+
+On considère l’échantillon fusionné $(X_1, X_2, \dots, X_n, Y_1, Y_2, \dots, Y_m) = (X_1, X_2, \dots, X_{n+m})$ et on note par $R_i$ le rang de $X_i$ dans l’échantillon fusionné.
+
+La statistique de Wilcoxon est : $\quad W_n = \sum_{i=1}^{n} R_i$
+
+
+$$
+\textbf{La région critique est :} \quad
+W =
+\begin{cases}
+W_n < c & \text{pour } H_1 : \theta > 0 \quad \text{alors } Y \gg X \\
+W_n > c & \text{pour } H_1 : \theta < 0 \quad \text{alors } X \gg Y \\
+W_n < c \text{ ou } W_n > c & \text{pour } H_1 : \theta \neq 0
+\end{cases}
+$$
+
+$$
+\begin{aligned}
+&\text{Sous } H_0, W_n \text{ est symétrique autour de sa moyenne.} \\
+&\mathbb{E}(W_n) = \sum \mathbb{E}(R_i) = n \cdot \mathbb{E}(R_i) = n \cdot \frac{n + m + 1}{2} \\[10pt]
+&\text{On remarque également :} \quad \mathbb{V}(W_n) = \frac{nm(n + m + 1)}{12} \\[10pt]
+&\text{Les valeurs extrêmes de } W_n \text{ sont :} \\
+&\textbf{a. } \text{Si tous les } X_i < Y_i \Rightarrow W_n = 1 + 2 + \cdots + n = \frac{n(n + 1)}{2} \\
+&\textbf{b. } \text{Si tous les } X_i > Y_i \Rightarrow W_n = (m + 1) + (m + 2) + \cdots + (m + n) \\
+&\phantom{\textbf{b. }} \Rightarrow W_n = nm + \frac{n(n + 1)}{2} \\[10pt]
+&\text{Pour des échantillons de petite taille, on utilise la table de Wilcoxon.} \\
+&\text{Pour des grands échantillons, on utilise l’approximation :} \\
+&\frac{W_n - \mathbb{E}(W_n)}{\sqrt{\mathbb{V}(W_n)}} \longrightarrow \mathcal{N}(0, 1)
+\end{aligned}
+$$
+
+- **Simulation**
+
+```{r}
+require(graphics)
+par(mfrow = c(2,2))
+for(n in c(4:5,10,40)) {
+  x <- seq(0, n*(n+1)/2, length.out = 501)
+  plot(x, dsignrank(x, n = n), type = "l",
+       main = paste0("dsignrank(x, n = ", n, ")"))
+}
+```
+
+- **Données**
+
+```{r}
+# Simulation de deux échantillons indépendants
+x <- c(21,22, 14, 25,15,17)   # Échantillon X
+y <- c(18, 14, 21,14,24,26,19,20)   # Échantillon Y
+n <- length(x)
+m <- length(y)
+N <- n+m
+```
+
+```{r}
+i <- 1:n
+plot(i, x, col = "blue" )
+lines(x, col = "blue" )
+lines(y, col = "red")
+```
+
+- **Visualisation : Fonctions de répartition empiriques**
+
+```{r}
+plot(ecdf(x), main = "Fonctions de Répartition Empiriques", xlab = "Valeurs", 
+     ylab = "F(x)", col = "blue", lwd = 2)
+lines(ecdf(y), col = "red", lwd = 2)
+legend("bottomright", legend = c("X", "Y"), col = c("blue", "red"), lwd = 2)
+```
+
+```{r}
+# Estimation de la densité avec densité par noyau
+d_x <- density(x)
+d_y <- density(y)
+
+# Fonction de répartition obtenue par intégration numérique
+Fx <- approxfun(d_x$x, cumsum(d_x$y) / sum(d_x$y))
+Fy <- approxfun(d_y$x, cumsum(d_y$y) / sum(d_y$y))
+
+# Séquence de valeurs communes pour comparer
+x_vals <- seq(min(c(x, y)) - 1, max(c(x, y)) + 1, length.out = 500)
+
+# Tracer les courbes lissées
+plot(x_vals, Fx(x_vals), type = "l", col = "blue", lwd = 2,
+     xlab = "Valeurs", ylab = "F(x)", main = "Fonctions de Répartition Lissées")
+lines(x_vals, Fy(x_vals), col = "red", lwd = 2)
+legend("bottomright", legend = c("X", "Y"), col = c("blue", "red"), lwd = 2)
+```
+
+- **Calcul de la statistique Wn**
+
+```{r}
+# Échantillon combiné
+data_combined <- c(x, y)
+
+rangs <- rank(data_combined, ties.method ="average")
+rangs
+print("")
+# Attribution des rangs à X
+rangs_x <- rangs[1:n]
+rangs_x
+print("")
+# Attribution des rangs à X
+k=n+1
+rangs_y <- rangs[k:N]
+rangs_y
+```
+
+```{r}
+# Statistique de Wilcoxon Wn
+Wn <- sum(rangs_x)
+Wn
+
+# somme des rangs de y
+Wy <- sum(rangs_y)
+Wy
+```
+
+- **Valeur critique au seuil de 5**
+
+La fonction _qwilcox_ est développé pour la statistique de test de Wilcoxon Mann-Withney définie par :
+
+$$
+\quad U_n = W_n - n(n+1)/2
+$$
+
+Donc pour avoir le seuil critique correspondant à la statistique Wn, il faut ajouter le terme n(n+1)/2
+
+```{r}
+seuil <- qwilcox(p = 0.05, n, m, lower.tail =F) + n*(n+1)/2
+seuil
+```
+
+- **Prise de décision**
+
+```{r}
+# Test pour H1: X >> Y
+if (Wn > seuil) {
+  cat("→ Décision : H0 est rejetée au seuil de 5% — alors X  domine Y.\n")
+} else {
+  cat("→ Décision : H0 n'est pas rejetée — aucune dominance significative de X sur Y.\n")
+}
+```
+
+### Test de wilcoxon disponible sur R
+
+- **Comparaison**
+
+```{r}
+# Test de Wilcoxon pour H1: X >> Y
+wilcox.test(x, y, alternative = "great", exact = FALSE)
+```
+
+- **Fonction**
+
+```{r}
+test_wilcoxon <- function(x, y, alternative = "droite", alpha=0.05) {
+  n <- length(x)
+  m <- length(y)
+  
+  # Fusion des données et calcul des rangs
+  data_combinee <- c(x, y)
+  rangs <- rank(data_combinee)
+  W <- sum(rangs[1:n])
+  cat("Statistique de Wilcoxon W =", W, "\n")
+  
+  # Définir type d'alternative
+  alt <- match.arg(alternative, choices = c("gauche", "droite", "bilateral"))
+  
+  # Test exact si petit (< 30)
+  if (n <= 25 | m <= 25  ) {
+    cat("Méthode : test exact basé sur la table de Wilcoxon\n")
+    
+    if (alt == "droite") {
+      seuil <- qwilcox(1-alpha, n, m, lower.tail = TRUE)+ n*(n+1)/2
+      cat("Seuil critique (droite, 5%) :", seuil, "\n")
+      if (W > seuil) {
+        cat("→ H₀ rejeté, alors X domine Y.\n")
+      } else {
+        cat("→ H₀ non rejetée\n")
+      }
+      
+    } else if (alt == "gauche") {
+      seuil <- qwilcox(alpha, n, m, lower.tail = TRUE)+ n*(n+1)/2
+      cat("Seuil critique (gauche, 5%) :", seuil, "\n")
+      if (W < seuil) {
+        cat("→ H₀ rejeté alors Y domine X.\n")
+      } else {
+        cat("→ H₀ non rejetée\n")
+      }
+      
+    } else if (alt == "bilateral") {
+      seuil_inf <- qwilcox(alpha, n, m, lower.tail = TRUE)+ n*(n+1)/2
+      seuil_sup <- qwilcox(1-alpha, n, m, lower.tail = TRUE)+ n*(n+1)/2
+      cat("Seuils critiques (bilatéral 5%) : <", seuil_inf, " ou >", seuil_sup, "\n")
+      if (W < seuil_inf || W > seuil_sup) {
+        cat("→ H₀ rejetée : différence significative entre X et Y.\n")
+      } else {
+        cat("→ H₀ non rejetée : pas de différence significative.\n")
+      }
+    }
+    
+  } else {
+    # Test approximatif (normale)
+    cat("Méthode : approximation normale\n")
+    EW <- n * (n + m + 1) / 2
+    VW <- n * m * (n + m + 1) / 12
+    Z <- (W - EW) / sqrt(VW)
+    cat("Statistique normalisée Z =", round(Z, 3), "\n")
+    
+    if (alt == "droite") {
+      z_crit <- qnorm(0.95)
+      cat("Seuil critique z (droite, 5%) :", round(z_crit, 3), "\n")
+      if (Z > z_crit) {
+        cat("→ H₀ rejetée : X domine Y.\n")
+      } else {
+        cat("→ H₀ non rejetée \n")
+      }
+      
+    } else if (alt == "gauche") {
+      z_crit <- qnorm(0.05)
+      cat("Seuil critique z (gauche, 5%) :", round(z_crit, 3), "\n")
+      if (Z < z_crit) {
+        cat("→ H₀ rejetée : Y domine X.\n")
+      } else {
+        cat("→ H₀ non rejetée \n")
+      }
+      
+    } else if (alt == "bilateral") {
+      z_crit <- qnorm(0.975)
+      cat("Seuils critiques z (bilatéral 5%) : ±", round(z_crit, 3), "\n")
+      if (abs(Z) > z_crit) {
+        cat("→ H₀ rejetée : différence significative entre X et Y.\n")
+      } else {
+        cat("→ H₀ non rejetée : pas de différence significative.\n")
+      }
+    }
+  }
+}
+```
+
+- **Application**
+
+```{r}
+test_wilcoxon (x,y, alternative = "droite")
+```
+
+```{r}
+test_wilcoxon (x,y, alternative = "gauche")
+```
+
+```{r}
+test_wilcoxon (x,y, alternative = "bilateral")
+```
+
+### Test de Mann Whitney Wilcoxon
+
+- **Fonction de rang : ** Le test de Mann-Whitney Wilcoxon est une méthode non paramétrique utilisée pour déterminer si deux échantillons indépendants proviennent de la même population ou si l'une des deux populations tend à avoir des valeurs plus grandes ou plus petites que l'autre.
+
+- **Hypothèses :** 
+
+ + $H_0 : F_X = F_Y$
+ + $H_1 : F_X > F_Y$
+
+- **Statisiques de test : ** La statistique de test est $W_n = \sum_{i=1}^{n} R_i -\frac{n(n+1)}{2}$, ou $R_i$ désigne le rang de $X_i$ dans l'échantillon fusionné.
+
+On a : 
+
+$$E(W_n) = n \times \frac{n+m+1}{2}-\frac{n(n+1)}{2}$$
+
+$$V(W_n) = n m \times \frac{n+m+1}{12}$$
+
+Avec n, m les tailles respectives des 2 échantillons.
+
+- **Loi de la statistique de test**
+
+Nous pouvons utiliser la table de Wilcoxon ou utiliser l'approximation par la loi normale.
+
+$$\frac{W_n - E(W_n)}{V(W_n)} \rightarrow \mathcal{N(0,1)}$$
+
+- **Mise en pratique**
+
+```{r}
+ X <- c(22.8, 23.4, 23.6, 23.7, 24.8, 26.1, 30.2)
+ Y <- c(23, 26.3, 26.3, 27.3, 28.7, 33.5, 35.3)
+ X_Y <- c(X,Y)
+ n = length(X)
+ m = length(Y)
+```
+
+
+- **Visualisation**
+
+```{r}
+# Estimation de la densité
+dens_X <- density(X)
+dens_Y <- density(Y)
+
+# Détermination des limites communes pour les axes
+x_lim <- range(c(dens_X$x, dens_Y$x))
+y_lim <- range(c(dens_X$y, dens_Y$y))
+
+# Plot des densités
+plot(dens_X, col = "blue", lwd = 2, main = "Densités de X et Y",
+     xlab = "Valeurs", ylab = "Densité", xlim = x_lim, ylim = y_lim)
+lines(dens_Y, col = "red", lwd = 2)
+
+# Légende
+legend("topright", legend = c("X", "Y"), col = c("blue", "red"), lwd = 2)
+
+# Optionnel: Ajouter des rug plots
+rug(X, col = "blue", side = 1)
+rug(Y, col = "red", side = 3)
+```
+
+
+```{r}
+ # —Calcul le rang des éléments de l’échantillon global
+ 
+ vecteur_rang<-rank(X_Y, ties.method = "average")
+ vecteur_rang
+
+ # —Calcul de la statistique observée
+ 
+ W_obs = -0.5*length(X)*(length(X)+1)
+ for(i in 1: length(X)){
+ W_obs=W_obs+vecteur_rang[i]
+ }
+ W_obs
+ 
+
+ # —Décision :
+ 
+ alpha = 0.05
+quantile_droite <- qwilcox(1 - alpha,n,m,log.p= FALSE)
+
+if(W_obs >= quantile_droite){
+"On rejette l'hypothese nulle  "
+}else{
+"On ne rejette pas l'hypothèse nulle"
+}
+```
+
+
+**Test unilatéral à gauche**
+
+
+```{r}
+alpha = 0.05
+quantile_gauche <- qwilcox(alpha,n,m,lower.tail =TRUE, log.p= FALSE) 
+# P(W≤q)≤0.05m c'est d'ailleurs par defaut.
+ 
+if(W_obs <= quantile_gauche){
+"On rejette l'hypothese nulle  "
+}else{
+"On ne rejette pas l'hypothèse nulle"
+}
+```
+
+**Test bilatéral**
+
+```{r}
+alpha = 0.05
+q_low <- qwilcox(alpha / 2, n,m)
+q_high <- qwilcox(1 - alpha / 2, n,m)
+
+if(W_obs <= q_low || W_obs >= q_high){
+"On rejette l'hypothese nulle  "
+}else{
+"On ne rejette pas l'hypothèse nulle"
+}
+```
+
+**Fonction recapitulative**
+
+```{r}
+wilcox_decision <- function(W_obs, n, m, alpha = 0.05, 
+                            alternative = c("two.sided", "less", "greater")) {
+  alternative <- match.arg(alternative)
+  
+if (alternative == "less") {
+  # Test unilatéral à gauche
+  q_left <- qwilcox(alpha,  n, m)
+  
+  if (W_obs <= q_left) {
+    return(" Rejet de H0 : le groupe 1 tend à avoir des valeurs plus PETITES que le groupe 2")
+  } else {
+    return("✅ On ne rejette pas H0")
+  }
+}
+
+   # Test unilatéral à droite
+  else if (alternative == "greater") {
+    q_right <- qwilcox(1 - alpha,  n, m)
+    if (W_obs >= q_right) {
+      return("🟥 Rejet de H0 : le groupe 1 tend à avoir des valeurs plus GRANDES que le groupe 2")
+    } else {
+      return("✅ On ne rejette pas H0")
+    }
+    } 
+  
+  # Test bilatéral
+  else {
+    q_low <- qwilcox(alpha / 2,  n, m)
+    q_high <- qwilcox(1 - alpha / 2,  n, m)
+    
+    if (W_obs <= q_low || W_obs >= q_high) {
+      return("🟥 Rejet de H0 : les distributions des deux groupes sont significativement différentes")
+    } else {
+      return("✅ On ne rejette pas H0")
+    }
+  }
+}
+```
+
+
+**Application**
+
+```{r}
+wilcox_decision(W_obs,  n, m, alpha = 0.05, alternative = "two.sided")
+wilcox_decision(W_obs,  n, m, alternative = "less")
+wilcox_decision(W_obs,  n, m, alternative = "greater")
+```
+
+<!-- ```{r} -->
+<!-- ## Test avec approximation loi normale -->
+<!-- E = n*((n+m+1):2)- 0.5*n*(n+1)# Espérance -->
+
+<!-- var = (m*n*((n+m+1):12)) # Variance -->
+
+<!-- q = (W_obs-E)/sqrt(var) -->
+
+<!-- p_value = pnorm(q = q) # parce H1 : sigma < 1 , ici -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- if (p_value < 0.05){ -->
+<!--   "On rejette l'hypothèse d'égalité des distributions" -->
+<!-- }else{ -->
+<!--   "On ne rejette pas l'hypothèse d'égalité des distributions" -->
+<!-- } -->
+<!-- ``` -->
+
+
+**Test avec la loi normale**
+
+```{r}
+## Approximation avec la loi normale
+E <- n*(n+m+1)/2 - n*(n+1)/2  # Correction de la formule d'espérance
+Var <- (n*m*(n+m+1))/12        # Correction de la formule de variance
+
+Z <- (W_obs - E)/sqrt(Var)     # Statistique standardisée
+
+# Calcul des p-values selon le type de test
+p_value_bilateral <- 2*pnorm(-abs(Z))
+p_value_gauche <- pnorm(Z)
+p_value_droite <- 1 - pnorm(Z)
+
+# Fonction de décision normalisée
+wilcox_normal_decision <- function(Z, alpha = 0.05, alternative = c("two.sided", "less", "greater")) {
+  alternative <- match.arg(alternative)
+  
+  if (alternative == "less") {
+    p_value <- pnorm(Z)
+    if (p_value < alpha) {
+      return(list(
+        decision = "🟥 Rejet de H0 (approximation normale) : X tend à avoir des valeurs plus petites que Y",
+        p_value = p_value,
+        Z = Z
+      ))
+    } else {
+      return(list(
+        decision = "✅ On ne rejette pas H0 (approximation normale)",
+        p_value = p_value,
+        Z = Z
+      ))
+    }
+  }
+  else if (alternative == "greater") {
+    p_value <- 1 - pnorm(Z)
+    if (p_value < alpha) {
+      return(list(
+        decision = "🟥 Rejet de H0 (approximation normale) : X tend à avoir des valeurs plus grandes que Y",
+        p_value = p_value,
+        Z = Z
+      ))
+    } else {
+      return(list(
+        decision = "✅ On ne rejette pas H0 (approximation normale)",
+        p_value = p_value,
+        Z = Z
+      ))
+    }
+  }
+  else {
+    p_value <- 2*pnorm(-abs(Z))
+    if (p_value < alpha) {
+      return(list(
+        decision = "🟥 Rejet de H0 (approximation normale) : Distributions significativement différentes",
+        p_value = p_value,
+        Z = Z
+      ))
+    } else {
+      return(list(
+        decision = "✅ On ne rejette pas H0 (approximation normale)",
+        p_value = p_value,
+        Z = Z
+      ))
+    }
+  }
+}
+
+## Application
+result_bilateral <- wilcox_normal_decision(Z, alternative = "two.sided")
+result_gauche <- wilcox_normal_decision(Z, alternative = "less")
+result_droite <- wilcox_normal_decision(Z, alternative = "greater")
+
+# Affichage des résultats
+cat("Test bilatéral:\n")
+cat("Z =", round(result_bilateral$Z, 3), "| p-value =", result_bilateral$p_value, "\n")
+cat(result_bilateral$decision, "\n\n")
+
+cat("Test unilatéral à gauche:\n")
+cat("Z =", round(result_gauche$Z, 3), "| p-value =", result_gauche$p_value, "\n")
+cat(result_gauche$decision, "\n\n")
+
+cat("Test unilatéral à droite:\n")
+cat("Z =", round(result_droite$Z, 3), "| p-value =", result_droite$p_value, "\n")
+cat(result_droite$decision, "\n")
+```
+
+
+**Avec la fonction disponible dans R**
+
+```{r, warning=FALSE, message=FALSE}
+
+wilcox.test(X,Y,alternative="two.side")
+```
+
+## Tests  d'alternative d'échelle
+
+### Test de Savage 
+
+**Présentation du Test de Savage :**
+
+Soient $X$ une variable continue et $Y$ une variable catégorielle de modalités : $y_1, y_2, \dots , y_K$. Le test de savage permet de tester si les sous échantillons de $X$ en fonction de $Y$ : $X|_{Y=y_1},  \ldots,  X|_{Y=y_K }$ ont la même fonction de répartition.
+
+Pour le test, on construit une fonction de score répartissant la distribution des rangs de X autour de leur position centrale moyenne.\
+la formule de la fonction de score est la suivante :
+
+$$f(r_i) = \sum_{j=r_i}^{n} \frac{1}{j}  = \sum_{j=1}^{n-r_i+1} \frac{1}{j} - 1 $$
+
+où $r_i$ est le rang de l'observation $i$ et $n$ la taille totale de l'échantillon.
+
+**Statistique de Test :**
+
+La statistique de test a alors pour formule :
+
+$$S = \frac{\sum_{k=1}^{K} \frac{(T_k - n_k \bar{f})^2}{n_k}}{\frac{\sum_{i=1}^{n} (f_i - \bar{f})^2}{n-1}}$$
+
+Avec :
+
+-   $T_k$ = somme des scores de Savage pour le groupe $k$
+-   $n_k$ = effectif du groupe $k$
+-   $\bar{f}$ = moyenne des scores de Savage
+-   $K$ = nombre de groupes
+
+#### Hypothèses du Test
+
+La statistique suit une loi du $\chi^2$ à $(K-1)$ degrés de liberté et l'hypothèse $H_0$ est :
+
+$$H_0 : F_1(x) = F_2(x) = \ldots = F_K(x)$$
+
+Avec la valeur seuil $\chi^2_{1-\alpha, K-1}$ de la distribution de la statistique de test du $\chi^2$ pour une confiance $(1-\alpha)$ et pour $(K-1)$ degrés de liberté, l'hypothèse alternative est alors :
+
+$H_1 : \exists i,j \in \{1,2,\ldots,K\} : F_i(x) \neq F_j(x)$
+
+-   tel que $S > \chi^2_{1-\alpha, k-1}$, soit rejet de $H_0$, pour un test bilatéral
+-   Le test du $\chi^2$ ne propose pas de forme unilatérale à droite ou à gauche pour $S$
+
+La loi à laquelle reporter la statistique de test de Savage est celle du $\chi^2$ à $(k-1)$ degrés de liberté. La formule de la p-valeur exacte est alors :
+
+$$p = P(\chi^2_{K-1} > S) = 1 - F_{\chi^2_{K-1}}(S)$$
+
+**Tendance pour le rejet de l'hypothèse nulle**
+
+Plus la statistique de test de Savage est grande et plus on a de chance de rejeter $H_0$, ce qui revient à dire que : 
+
+- **On rejette** $H_0$ si $S > \chi^2_{1-\alpha, K-1}$
+- Soit que la somme des rangs pour l'un des groupes est nettement plus grande que la moyenne des rangs pondérés, impliquant que l'une des distributions est nettement différente des autres.
+
+- **Tendance lorsque n tend vers l'infini**
+
+Le test de Savage est influencé par la taille de l'échantillon. Pour de très grands échantillons, le test peut rejeter $H_0$ à tort même lorsque les distributions sont similaires. Cette sensibilité est due à la formule de la statistique de test qui fait intervenir les effectifs des différents groupes.
+
+#### Implémentation
+
+- **Importation des données**
+
+```{r }
+donnees <- read_dta("BASES/savage_dataset.dta")
+donnees$milieu <- as_factor(donnees$milieu)
+```
+
+- **Graphique des courbes de densité par classe**
+
+```{r}
+plot_densites <- function(data, var_continue, var_groupe, 
+                          titre = "Distribution par groupe") {
+  
+  # Création du graphique de densité
+  p <- ggplot(data, aes_string(x = var_continue, color = var_groupe)) +
+    geom_density(size = 1.2, alpha = 0.8) +
+    theme_minimal() +
+    labs(
+      title = titre,
+      x = var_continue,
+      y = "Densité",
+      color = var_groupe
+    ) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.title = element_text(size = 12),
+      legend.title = element_text(size = 12)
+    )
+  
+  return(p)
+}
+```
+
+- **Boxplot par classe**
+
+```{r}
+plot_boxplots <- function(data, var_continue, var_groupe, 
+                          titre = "Boxplot par groupe") {
+  
+  # Création du boxplot
+  p <- ggplot(data, aes_string(x = var_groupe, y = var_continue, fill = var_groupe)) +
+    geom_boxplot(alpha = 0.7, outlier.color = "red", outlier.size = 2) +
+    theme_minimal() +
+    labs(
+      title = titre,
+      x = var_groupe,
+      y = var_continue,
+      fill = var_groupe
+    ) +
+    theme(
+      legend.position = "none",
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.title = element_text(size = 12),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  return(p)
+}
+```
+
+- **Affichage des courbes de densité**
+
+```{r warning=FALSE}
+plot_densites(donnees, "age", "milieu", "Distribution des âges par milieu de résidence")
+```
+
+- **Affichage des boxplots**
+
+```{r}
+plot_boxplots(donnees, "age", "milieu", "Boxplot des âges par milieu de résidence")
+```
+
+- **Fonction de test de Savage**
+
+```{r}
+SavageTest <- function(X, Y) {
+  
+  # Vérifications préliminaires
+  if(length(X) != length(Y)) {
+    stop("Les vecteurs X et Y doivent avoir la même longueur")
+  }
+  
+  if(any(is.na(X)) || any(is.na(Y))) {
+    stop("Les données ne doivent pas contenir de valeurs manquantes")
+  }
+  
+  # Transformation de X en variable de rang
+  R <- rank(X)
+  
+  # Récupération des différents éléments
+  n <- length(R)
+  biblio <- summary(factor(Y)) #effectif de chaque groupe
+  nbClass <- length(biblio)
+  
+  # Vérification du nombre de groupes
+  if(nbClass < 2) {
+    stop("Il faut au moins 2 groupes pour effectuer le test")
+  }
+  
+  print(paste("Nombre d'observations:", n))
+  print(paste("Nombre de groupes:", nbClass))
+  print("Effectifs par groupe:")
+  print(biblio)
+  
+  # Initialisation des vecteurs f
+  f <- 0 # score de savage pour chaque observation
+  ff <- 0 # score de savage par groupe
+  
+  # Calcul de f(X restreint aux différents groupes de Y)
+  for (c in 1:nbClass) {
+    # Focus sur la classe en cours
+    Rcalc <- R[which(Y == names(biblio)[c])]
+    nb <- length(Rcalc)
+    f_Rcalc <- 0
+    aa <- 0
+    
+    # Pour chaque observation de la classe en cours
+    for (i in 1:nb) {
+      # Calcul du score de Savage : somme de 1/(n-k+1) pour k allant de rang à n
+      a <- sum(1/(n - 1:Rcalc[i] + 1)) - 1
+      f_Rcalc <- c(f_Rcalc, a)
+      aa <- c(aa, a)
+    }
+    
+    # Remplissage des vecteurs
+    f <- c(f, f_Rcalc[-1])
+    ff <- c(ff, sum(aa[-1]))
+  }
+  
+  # Calcul du dénominateur et du numérateur
+  f_barre <- mean(f[-1])
+  Denom <- sum((f[-1] - f_barre)^2)/(n - 1)
+  Num <- sum((ff[-1] - biblio*f_barre)^2/biblio)
+  
+  # Calcul de la statistique de test
+  S <- Num/Denom
+  df <- nbClass - 1
+  p_value <- 1 - pchisq(S, df)
+  
+  # Préparation des résultats
+  Result <- c(biblio, N = n, Statistique_test = S, df = df, p_value = p_value)
+  
+  return(Result)
+}
+```
+
+- **Fonction d'interprétation complète**
+
+```{r}
+interpretation_savage <- function(X, Y, alpha = 0.05, nom_var_X = "X", nom_var_Y = "Y") {
+  #' Fonction complète d'interprétation du test de Savage
+  #' 
+  #' @param X Variable continue
+  #' @param Y Variable qualitative (groupes)
+  #' @param alpha Seuil de significativité (défaut: 0.05)
+  #' @param nom_var_X Nom de la variable continue pour l'affichage
+  #' @param nom_var_Y Nom de la variable qualitative pour l'affichage
+  
+  cat("=========================================\n")
+  cat("           TEST DE SAVAGE\n")
+  cat("=========================================\n\n")
+  
+  cat("Variables analysées:\n")
+  cat(paste("- Variable continue:", nom_var_X, "\n"))
+  cat(paste("- Variable qualitative:", nom_var_Y, "\n\n"))
+  
+  cat("Hypothèses:\n")
+  cat("H0: Les distributions sont identiques entre les groupes\n")
+  cat("H1: Au moins une distribution diffère des autres\n\n")
+  
+  # Application du test
+  resultats <- SavageTest(X, Y)
+  
+  # Extraction des paramètres
+  S <- as.numeric(resultats["Statistique_test"])
+  df <- as.numeric(resultats["df"])
+  p_val <- as.numeric(resultats["p_value"])
+  n_total <- as.numeric(resultats["N"])
+  
+  # Valeur critique
+  valeur_critique <- qchisq(1 - alpha, df)
+  
+  cat("Résultats du test:\n")
+  cat(paste("- Statistique de test S =", round(S, 4), "\n"))
+  cat(paste("- Degrés de liberté =", df, "\n"))
+  cat(paste("- P-valeur =", round(p_val, 4), "\n"))
+  cat(paste("- Valeur critique (α =", alpha, ") =", round(valeur_critique, 4), "\n\n"))
+  
+  # Décision
+  cat("Décision:\n")
+  if (p_val < alpha) {
+    cat(paste("✓ Rejet de H0 (p =", round(p_val, 4), "< α =", alpha, ")\n"))
+    cat("✓ CONCLUSION: Les distributions diffèrent significativement entre groupes.\n\n")
+  } else {
+    cat(paste("✗ Non rejet de H0 (p =", round(p_val, 4), "≥ α =", alpha, ")\n"))
+    cat("✗ CONCLUSION: Pas de différence significative entre les distributions.\n\n")
+  }
+  
+  # Interprétation de l'intensité de l'effet
+  cat("Intensité de l'effet:\n")
+  if (S > 2 * valeur_critique) {
+    cat("→ Effet très fort (S >> valeur critique)\n")
+  } else if (S > 1.5 * valeur_critique) {
+    cat("→ Effet fort (S > 1.5 × valeur critique)\n")
+  } else if (S > valeur_critique) {
+    cat("→ Effet modéré (S > valeur critique)\n")
+  } else {
+    cat("→ Effet faible ou absent (S ≤ valeur critique)\n")
+  }
+  
+  cat("\n=========================================\n")
+  
+  return(invisible(resultats))
+}
+```
+
+#### Application
+
+- **base complète**
+
+```{r}
+print("\n=== TEST DE SAVAGE ===")
+resultats <- interpretation_savage(donnees$age, donnees$milieu, 
+                                 alpha = 0.05, 
+                                 nom_var_X = "Âge", 
+                                 nom_var_Y = "Milieu de résidence")
+
+```
+
+- **sous échantillon**
+
+```{r}
+# Création du sous-échantillon stratifié : 1000 individus par milieu
+set.seed(42)  # Pour reproductibilité
+
+sous_echantillon <- donnees |>
+  split(donnees$milieu) |>  # Divise les données selon le milieu
+  lapply(function(df) df[sample(nrow(df), size = min(100, nrow(df))), ]) |>  # Tire 1000 aléatoirement dans chaque stratum
+  do.call(what = rbind)  # Recombine les strates
+
+# Vérification des effectifs par milieu
+table(sous_echantillon$milieu)
+```
+
+```{r}
+plot_densites(sous_echantillon, "age", "milieu", "Distribution des âges par milieu de résidence")
+```
+
+```{r}
+plot_boxplots(sous_echantillon, "age", "milieu", "Boxplot des âges par milieu de résidence")
+```
+
+```{r}
+print("\n=== TEST DE SAVAGE ===")
+resultats <- interpretation_savage(sous_echantillon$age, sous_echantillon$milieu, 
+                                 alpha = 0.05, 
+                                 nom_var_X = "Âge", 
+                                 nom_var_Y = "Milieu de résidence")
+
+```
+
+### Test de Mood 
+
+```{r}
+# Données d'exemple
+x3 <- 1:15  # Les périodes (il y a 15 valeurs dans chaque vecteur)
+
+x1 <- c(4.953, 2.524, 2.207, 3.153, 4.637, 4.11, 3.607, 3.91, 3.521,  
+        2.404, 2.112, 6.947, 3.857, 3.756, 4.836)  # Groupe A
+
+y1 <- c(1.24, 8.163, 3.756, 10.46, 2.172, 4.672, 4.376, 1.002, 1.855, 
+        4.227, 3.727, 3.409, 5.973, 5.786, 6.331)  # Groupe B
+
+# Tracer la première courbe (x1 en bleu)
+plot(x3, x1, type = "l", col = "blue", lwd = 2, ylim = range(c(x1, y1)),
+     xlab = "Temps", ylab = "Valeurs", main = "Évolution comparée")
+
+# Ajouter la deuxième courbe (y1 en rouge)
+lines(x3, y1, col = "red", lwd = 2)
+
+# Ajouter une légende
+legend("topleft", legend = c("Groupe A", "Groupe B"),
+       col = c("blue", "red"), lty = 1, lwd = 2)
+
+```
+
+
+**Création de la base de donneés**
+
+```{r}
+x <- c(4.953, 2.524, 2.207, 3.153, 4.637, 4.11, 3.607, 3.91, 3.521,  2.404, 
+       2.112, 6.947, 3.857, 3.756, 4.836)  # Groupe A
+y <- c(1.24, 8.163, 3,756, 10,46, 2.172, 4.672, 4.376, 1.002, 1.855, 4.227, 
+       3.727, 3.409, 5.973, 5.786, 6.331) # Groupe B
+
+```
+
+**Appliquer le test de Mood**
+
+```{r}
+mood.test(x, y)
+```
+
+Notre p_value est inferieur a 0,05 alors on rejet Ho c'est-à-dire que les dispersions ne sont pas les mêmes. Autrement dit, les dispersions sont differentes.
+
+
+A présent, nous allons refaire le test manuellement et comparer aux résultats précédents, avant d'élaborer une fonction.
+
+```{r}
+n <- length(x) # taille de X
+m <- length(y) # taille de Y
+N <- n + m     # taille totale
+
+```
+
+**Rang, score et tableau**
+
+On combine les deux groupes et on calcule les rangs et les scores
+
+- **Score de chaque observation**
+
+$$
+\text{score}_i = \left( \text{rang}_i - \frac{N + 1}{2} \right)^2
+$$
+
+```{r}
+# Combinaison
+z <- c(x, y)
+groupe <- c(rep("X", n), rep("Y", m))
+rang <- rank(z)
+score <- (rang - (N + 1) / 2)^2
+
+# Tableau
+table_mood <- data.frame(Observation = z, Groupe = groupe, Rang = rang, Score = score)
+knitr::kable(table_mood, digits = 3)
+```
+
+- **On calcule la somme des scores pour le groupe X (appelée $M_n$)** 
+
+$$
+M_n = \sum_{i=1}^n \left( \text{rang}_i - \frac{N + 1}{2} \right)^2
+$$
+```{r}
+Mn <- sum(score[groupe == "X"])
+Mn
+```
+
+Ensuite, on calcule l'espérance et la variance.
+
++ _Espérance de \( M_n \)_
+
+$$
+\mathbb{E}[M_n] = \frac{n (N^2 - 1)}{12}
+$$
+
++ _Variance de \( M_n \)_
+
+$$
+\mathrm{Var}(M_n) = \frac{n m (N + 1)(N^2 - 1)}{180}
+$$
+
+```{r}
+esp <- n * (N^2 - 1) / 12
+var <- n * m * (N + 1) * (N^2 - 1) / 180
+esp
+var
+```
+
+- **Normalisation : **
+
+Statistique normalisée : $Z = \frac{M_n - \mathbb{E}[M_n]}{\sqrt{\mathrm{Var}(M_n)}}$
+
+```{r}
+Z <- (Mn - esp) / sqrt(var)
+Z
+```
+
+- **Règle de décision : **
+
+$\text{Si } |Z| > z_{1 - \alpha/2}, \text{ alors on rejette } H_0$
+
+```{r}
+ 
+# Seuil critique
+  z_crit <- qnorm(1 - 0.05 / 2)
+z_crit
+```
+
+```{r}
+# calcul du valeur absolue de Z
+valeur_Z<- abs(Z) 
+valeur_Z
+
+```
+
+
+On voit que la valeur absolue de Z est superieur a 1,96 alors on rejette Ho c'est a dire les dispersions ne sont pas les mêmes
+
+
+**Fonctions**
+
+```{r}
+mood_test_manuel <- function(x, y, alpha) {
+  # Étapes préliminaires
+  n <- length(x)
+  m <- length(y)
+  N <- n + m
+  z <- c(x, y)
+  groupe <- c(rep("X", n), rep("Y", m))
+  
+  # Rangs et scores
+  rang <- rank(z)
+  score <- (rang - (N + 1)/2)^2
+  
+  # Mn : somme des scores pour le groupe X
+  Mn <- sum(score[groupe == "X"])
+  
+  # Espérance et variance de Mn
+  esperance <- n * (N^2 - 1) / 12
+  variance <- n * m * (N + 1) * (N^2 - 1) / 180
+  
+  # Statistique Z
+  Z <- (Mn - esperance) / sqrt(variance)
+  abs_Z <- abs(Z)
+  
+  # Seuil critique
+  z_crit <- qnorm(1 - alpha / 2)
+  
+  # Décision
+  decision <- ifelse(abs_Z > z_crit,
+                     "Rejet de H0 : dispersions différentes",
+                     "On ne rejette pas H0 : dispersions identiques")
+  
+  # Retourner les résultats sous forme de liste
+  resultats <- list(
+    Mn = Mn,
+    Esperance = esperance,
+    Variance = variance,
+    Z = Z,
+    abs_Z = abs_Z,
+    z_critique = z_crit,
+    alpha = alpha,
+    Decision = decision
+  )
+  
+  return(resultats)
+}
+
+```
+
+Renseignons à présent les valeurs. 
+
+```{r}
+# Tes données
+x <- c(4.953, 2.524, 2.207, 3.153, 4.637, 4.11, 3.607, 3.91, 3.521,
+       2.404, 2.112, 6.947, 3.857, 3.756, 4.836)
+
+y <- c(1.24, 8.163, 3.756, 10.46, 2.172, 4.672, 4.376, 1.002, 1.855,
+       4.227, 3.727, 3.409, 5.973, 5.786, 6.331)
+
+# Appel avec alpha = 0.01 (ou tout autre seuil)
+resultat <- mood_test_manuel(x, y, alpha = 0.05)
+
+# Affichage
+print(resultat)
+```
+
+## Tests d'alternative générale
+
+### Test de Kolmogorov
+
+#### Exemple
+
+```{r}
+x <- c(0.9, 1.8, 2.2, 2.6, 2.7)      
+y <- c(0.6, 1.1, 1.4, 2.3, 3.0, 3.1) 
+```
+
+- **Fusion des vecteurs x et y**
+ 
+```{r}
+x_y <- c(x,y)
+x_yr <- sort(x_y)
+```
+
+- **Visualisation des données**
+
+  + **Densité**
+
+```{r}
+dx <- density(x)
+dy <- density(y)
+
+plot(dx, col = "blue", lwd = 2, main = "Estimation des densités", xlab = "Valeurs", ylim = range(0, dx$y, dy$y))
+lines(dy, col = "red", lwd = 2)
+
+legend("topright", legend = c("Fx", "Fy"), col = c("blue", "red"), lwd = 2)
+
+```
+
+  +  **Fonction de répartition empirique**
+
+```{r}
+Fx <- ecdf(x)
+Fy <- ecdf(y)
+
+range_x <- seq(min(x_yr) - 0.1, max(x_yr) + 0.1, length.out = 100)
+
+plot(range_x, Fx(range_x), type = "s", col = "blue", lwd = 2,
+     xlab = "Valeurs", ylab = "F(x)", main = "Fonctions de répartition empiriques")
+lines(range_x, Fy(range_x), type = "s", col = "red", lwd = 2)
+
+legend("topright", legend = c("Fx (x)", "Fy (x)"), col = c("blue", "red"), lwd = 2)
+
+```
+
+
+- **Tableau format long**
+
+```{r}
+N <- length(x_yr)
+x_long <- c(x, rep(NA, N - length(x)))
+y_long <- c(y, rep(NA, N - length(y)))
+df <- data.frame(x = x_long, y = y_long)
+
+df$x_y <- x_yr
+
+# Serie source de chaque valeur
+df$xn <- ifelse(df$x_y %in% x, 1, 0)
+df$yn <- ifelse(df$x_y %in% y, 1, 0)
+
+# Effectifs cumulés
+df$ECC1 <- sapply(df$x_y, function(val) {
+  sum(x <= val)
+})
+df$ECC2 <- sapply(df$x_y, function(val) {
+  sum(y <= val)
+})
+
+# Fonction de répartition
+df$Fx <- df$ECC1/length(x)
+df$Fy <- df$ECC2/length(y)
+
+df["Fx-Fy"] <- df$Fx-df$Fy
+df["Fy-Fx"] <- df$Fy-df$Fx
+
+print(df)
+```
+
+- **Statistique de test**
+
+La table de Kolmogrov n'est pas tabulé sur R.
+
+```{r}
+Kmn <- max(df["Fx-Fy"],df["Fy-Fx"])
+paste("Kmn = ", Kmn)
+paste("Valeur de c avec la loi normale standard", pnorm(0.975, mean = 0, sd = 1)
+)
+
+paste("Test de Kolmogrov sur R")
+print(ks.test(x, y))
+
+```
+
+#### Fonctions 
+
+```{r}
+ks.stat <- function(x, y) {
+  x_yr <- sort(c(x, y))
+  N <- length(x_yr)
+  
+  x_long <- c(x, rep(NA, N - length(x)))
+  y_long <- c(y, rep(NA, N - length(y)))
+  
+  # Créer le tableau initial
+  df <- data.frame(
+    x = x_long,
+    y = y_long,
+    x_y = x_yr
+  )
+  
+  df$xn <- ifelse(df$x_y %in% x, 1, 0)
+  df$yn <- ifelse(df$x_y %in% y, 1, 0)
+  
+  # Effectifs cumulés pour chaque valeur de x_y
+  df$ECC1 <- sapply(df$x_y, function(val) sum(x <= val))
+  df$ECC2 <- sapply(df$x_y, function(val) sum(y <= val))
+  
+  # Fonctions de répartition empiriques
+  df$Fx <- df$ECC1 / length(x)
+  df$Fy <- df$ECC2 / length(y)
+  
+  df["Fx-Fy"] <- df$Fx - df$Fy
+  df["Fy-Fx"] <- df$Fy - df$Fx
+  
+  # Statistique de test
+  Kmn <- max(df["Fx-Fy"],df["Fy-Fx"])
+  
+  return(list(
+    tableau = df,
+    Kmn = Kmn
+  ))
+}
+```
+
+#### Application 
+
+```{r}
+df <- read_excel("BASES\\notes_kolmogorov.xlsx")
+
+x <- df[["Anthropo/Moyenne"]]
+y <- df[["Estimation/Moyenne"]]
+
+ks.stat(x,y)
+```
+
+```{r}
+ks.test(x, y)
+```
+
+\includepdf{TABLE_KOLMOGOROV_SMIRNOV_1.pdf} 
+\includepdf{TABLE_KOLMOGOROV_SMIRNOV_2.pdf}
+
+\newpage 
+
+
+# \textcolor{blue}{Chapitre 4 : Problème de k > 2 échantillons} 
+
+## Test de Kruskal - Wallis 
+
+```{r}
+# Données
+salaire <- c(420, 450, 470, 490,   # X1 : économie
+             410, 430, 440, 470,   # X2 : éducation
+             400, 410, 430, 440)   # X3 : santé
+
+ministere <- factor(rep(c("Economie", "Education", "Sante"), each = 4))
+
+data.frame(salaire, ministere)
+
+```
+
+
+
+On veut tester : 
+
+$H_0$ : le salaire a les mêmes distributions contre  $H_1$ : au moins une distribution est différente 
+
+### Programmation du test de Kruskal - Wallis 
+
+```{r}
+# Calcul des rangs
+rangs <- rank(salaire) 
+rangs
+```
+
+```{r}
+#somme des rangs par groupe
+data <- data.frame(salaire, ministere, rangs)
+S_i <- tapply(data$rangs, data$ministere, sum)
+# Effectifs par groupe
+n_i <- tapply(data$salaire, data$ministere, length)
+
+print (S_i)
+```
+
+$$ H = \dfrac{12}{n (n+1)} \sum_{i = 1}^{K} \dfrac{S_i^2}{n_i} - 3 (n+1) $$
+
+```{r}
+# Calcul de la statistique H 
+
+n <- length(salaire)
+H <- (12 / (n * (n+ 1))) * sum((S_i^2) / n_i) - 3 * (n+ 1)
+print(H)
+
+```
+
+Sous H0, H suit une loi de Khi-deux à 3-1 degrés de liberté. 
+
+```{r}
+# nombre de degrés de libertés
+ddl <- length(unique(ministere)) - 1  
+# valeur critique de la table de la loi de Khi-deux 
+stat_theo <- qchisq(0.95, df = 2)
+p_value <- 1 - pchisq(H, ddl)
+
+cat("Statistique calculée =", round(H, 3), "\n")
+cat("valeur critique =", round(stat_theo, 3), "\n")
+cat("p-value =", round(p_value,3), "\n")
+```
+
+3.47 < 5.99. Ainsi, au seuil de $ \alpha = $  5 %, on ne peut rejeter H0. C'est dire que les distributions de salaires sont identiques.
+
+### Avec Kruskal.test 
+
+```{r}
+kruskal.test(salaire ~ ministere)
+```
+
+p-value > 0.05. Ainsi, au seuil de $\alpha =$  5 %, on ne peut rejeter H0. C'est dire que les distributions de salaires sont identiques.  
+
+### Correction des ex-aequos 
+
+Les rangs moyens utilisés dans le test introduisent une distorsion dans la distribution de H si des ex-aequos existent.
+
+$$ H_{corrigé} = \dfrac{H}{1- \sum_{i=1}^s \dfrac{(t_i^3 - t_i)}{n^3 - n}} $$
+
+```{r}
+
+# Identification des tailles des groupes d'ex-aequos
+freq <- table(salaire)          # compte les fréquences des valeurs
+ties <- freq[freq > 1]          # garde seulement celles > 1
+sum_ties <- sum(ties^3 - ties)  # somme des (t_i^3 - t_i)
+
+# Correction
+correction <- 1 - (sum_ties / (n^3 - n))
+H_corrige <- H / correction
+
+# 3. Affichage
+cat("H =", round(H,3), "\n")
+cat("Facteur de correction =", round(correction,3), "\n")
+cat("H corrigée =", round(H_corrige,3), "\n")
+cat("Valeur critique =", round(qchisq(0.95, 2),3), "\n")
+
+```
+
+3.52 < 5.991 donc on ne peut rejeter H0.
+
+**NB :** La fonction **Kruskal.test** corrige les ex-aequos.
+
+\newpage 
+
+# \textcolor{blue}{CHAPITRE 5 : Estimation d'une densité } 
+
+## Estimation de la densité par histogramme 
+
+### Construction de l’estimateur par l’histogramme
+
+Soit $[a;b]$ l’intervalle contenant les observations $x_1, x_2, \ldots, x_n$.
+
+On partitionne l’intervalle $[a;b]$ en $J$ classes de longueur $h$. Les classes sont notées par :
+
+$$
+A_j = [a_j; a_{j+1}], \quad j = 1, 2, \ldots, J
+$$
+
+avec
+
+$$
+h = a_{j+1} - a_j
+$$
+
+Si on note $n_j$ le nombre d’observations de l’échantillon appartenant à la classe $A_j$, alors :
+
+$$
+n_j = \mathrm{card}\{ i : x_i \in A_j \} = \sum_{i=1}^n 1_{\{x_i \in A_j\}}
+$$
+
+L’estimateur de la densité $f$ sur la classe $A_j$ est donné par :
+
+$$
+\hat{f}_n(x) = \frac{n_j}{n \cdot h}, \quad x \in [a_j, a_{j+1}]
+$$
+
+On peut aussi écrire :
+
+$$
+\hat{f}_n(x) = \frac{1}{n} \cdot \frac{\mathrm{card}\{ x_i \leq a_{j+1} \} - \mathrm{card}\{ x_i \leq a_j \}}{h}
+$$
+
+**Note :** Cet estimateur est une fonction en escalier, constante sur chaque classe $A_j$.
+
+### Application
+
+```{r}
+# Données
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+
+# Taille de l'échantillon
+n <- length(X)
+
+# Définition des bornes de l'intervalle
+a <- min(X)
+b <- max(X)
+
+# Nombre de classes
+J <- 4
+
+# Largeur des classes
+h <- (b - a) / J
+
+# Définition des bornes des classes
+breaks <- seq(a, b, by = h)
+
+```
+
+#### Construisons à présent l'estimateur
+
+```{r}
+# Construction de l’histogramme 
+hist_res <- hist(X, breaks = breaks, plot = FALSE)
+
+# Effectifs par classe (n_j)
+n_j <- hist_res$counts
+
+# Estimateur de la densité par classe
+f_hat <- n_j / (n * h)
+
+# Affichage des résultats
+data.frame(
+  Classe = paste0("[", round(breaks[-length(breaks)], 2), ", ", round(breaks[-1], 2), "]"),
+  Effectif = n_j,
+  Densite_estimee = round(f_hat, 3)
+)
+
+```
+
+**Traçons l'histogramme**
+
+```{r}
+# Tracé de l’histogramme
+hist_res <- hist(X, breaks = breaks, freq = FALSE, col = "skyblue",
+                 main = "Estimateur par histogramme",
+                 xlab = "X", ylab = "Densité estimée", border = "darkblue")
+
+# Coordonnées du polygone des fréquences :
+# abscisses = milieux des classes
+mids <- hist_res$mids
+
+# ordonnées = densité estimée (f_hat)
+densites <- hist_res$density
+
+# Tracé de la ligne du polygone des fréquences
+lines(mids, densites, type = "b", col = "red", lwd = 2, pch = 19)
+```
+
+### Estimation de la MISE et calcul de l'AMISE
+
+- **Définition de l'erreur quadratique moyenne intégrée (MISE)**
+
+L'erreur quadratique moyenne intégrée (MISE) est définie par :
+
+$$
+\text{MISE} = \int_{-\infty}^{+\infty} E\left[(\hat{f}_n(x) - f(x))^2\right] dx
+$$
+
+Pour l'estimateur par histogramme, l'approximation asymptotique de la MISE est :
+
+$$
+\text{MISE} \approx \frac{h^2}{12}\int_{-\infty}^{+\infty} (f'(x))^2 dx + \frac{1}{nh} + o(h^2) + o\left(\frac{1}{nh}\right)
+$$
+
+Le terme principal du MISE, appelé AMISE (MISE asymptotique), est :
+
+$$
+\text{AMISE} = \frac{h^2}{12}\int_{-\infty}^{+\infty} (f'(x))^2 dx + \frac{1}{nh}
+$$
+
+```{r}
+# Données 
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+n <- length(X)
+mu <- mean(X)
+sigma <- sd(X)
+
+# Paramètres de l'histogramme
+J <- 4
+h <- (max(X) - min(X)) / J
+
+```
+
+- **Estimation empirique du MISE par simulation Monte Carlo**
+
+Pour estimer empiriquement le MISE, on utilise la simulation Monte Carlo avec la formule :
+
+$$
+\text{MISE} \approx \frac{1}{B} \sum_{b=1}^{B} \int (\hat{f}_n^{(b)}(x) - f(x))^2 dx
+$$
+
+où $\hat{f}_n^{(b)}(x)$ est l'estimateur calculé sur le $b$-ième échantillon simulé et $B$ est le nombre de répétitions Monte Carlo.
+
+- **Estimation de la MISE et calcul de l’AMISE**
+
+```{r}
+# Données 
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+n <- length(X)
+mu <- mean(X)
+sigma <- sd(X)
+
+# Paramètres de l’histogramme
+J <- 4
+h <- (max(X) - min(X)) / J
+
+```
+
+```{r}
+# Estimation empirique du MISE par simulation
+B <- 500  # nombre de répétitions Monte Carlo
+grid_x <- seq(min(X)-1, max(X)+1, length.out = 500)
+true_density <- dnorm(grid_x, mean = mu, sd = sigma)
+mise_vals <- numeric(B)
+
+for (b in 1:B) {
+  # Génération d'un nouvel échantillon
+  sample_b <- rnorm(n, mean = mu, sd = sigma)
+  breaks_b <- seq(min(sample_b), max(sample_b), length.out = J + 1)
+  hist_b <- hist(sample_b, breaks = breaks_b, plot = FALSE)
+  mids_b <- hist_b$mids
+  f_hat_b <- hist_b$density
+  
+  # Interpolation de la densité estimée
+  f_interp <- approx(x = mids_b, y = f_hat_b, xout = grid_x,
+                     method = "constant", rule = 2)$y
+  
+  # Calcul de l’erreur quadratique intégrée
+  mise_vals[b] <- mean((f_interp - true_density)^2)
+}
+
+# Moyenne des erreurs → estimation du MISE
+MISE_estimee <- mean(mise_vals)
+
+# Calcul théorique de l’AMISE
+# Pour la densité normale N(mu, sigma^2), on connaît :
+I_fprime2 <- 1 / (2 * pi * sigma^5)  # ∫ (f')^2 dx
+AMISE <- (1 / (n * h)) + (h^2 / 12) * I_fprime2
+
+# Affichage des résultats
+cat("Estimation empirique du MISE :", round(MISE_estimee, 6), "\n")
+cat("Valeur théorique de l’AMISE   :", round(AMISE, 6), "\n")
+
+```
+
+#### Calcul théorique de l'AMISE
+
+Pour une densité normale $N(\mu, \sigma^2)$, on connaît la valeur analytique de :
+
+$$
+\int_{-\infty}^{+\infty} (f'(x))^2 dx = \frac{1}{2\pi^{1/2}\sigma^5}
+$$
+
+D'où l'AMISE théorique pour la densité normale :
+
+$$
+\text{AMISE} = \frac{h^2}{12} \times \frac{1}{2\pi^{1/2}\sigma^5} + \frac{1}{nh}
+$$
+
+```{r}
+# Calcul théorique de l'AMISE
+# Pour la densité normale N(mu, sigma²), on connaît :
+I_fprime2 <- 1 / (2 * pi * sigma^5)  # 
+AMISE <- (1 / (n * h)) + (h^2 / 12) * I_fprime2
+
+# Affichage des résultats
+cat("Estimation empirique du MISE :", round(MISE_estimee, 6), "\n")
+cat("Valeur théorique de l'AMISE   :", round(AMISE, 6), "\n")
+```
+
+### Calcul de la fenêtre optimale $h^*$
+
+La fenêtre optimale théorique qui minimise l'AMISE est obtenue en résolvant :
+
+$$
+\frac{d}{dh}(\text{AMISE}) = 0
+$$
+
+Ce qui donne :
+
+$$
+h^* = \left[\frac{6}{n \times \int_{-\infty}^{+\infty} (f'(x))^2 dx}\right]^{1/3}
+$$
+
+L'AMISE avec la fenêtre optimale est proportionnelle à $n^{-2/3}$, ce qui donne la vitesse de convergence de l'estimateur par histogramme.
+
+```{r}
+# Calcul de la fenêtre optimale
+h_optimal <- (6 / (n * I_fprime2))^(1/3)
+
+# AMISE avec la fenêtre optimale
+AMISE_optimal <- (h_optimal^2 / 12) * I_fprime2 + 1 / (n * h_optimal)
+
+cat("Fenêtre optimale h*           :", round(h_optimal, 4), "\n")
+cat("AMISE avec h* optimal         :", round(AMISE_optimal, 6), "\n")
+cat("Fenêtre utilisée h            :", round(h, 4), "\n")
+```
+
+### Calcul de h de façon automatique
+
+```{r}
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+n <- length(X)
+
+# Choix automatique du nombre de classes selon Sturges
+J <- ceiling(log2(n) + 1)
+
+# Bornes des classes
+breaks <- seq(min(X), max(X), length.out = J + 1)
+
+# Histogramme sans affichage
+hist_res <- hist(X, breaks = breaks, plot = FALSE)
+
+# Effectifs
+n_j <- hist_res$counts
+
+# Largeur classes (elles sont égales ici)
+h <- diff(breaks)[1]
+
+# Estimation densité
+f_hat <- n_j / (n * h)
+
+# Tableau résultats
+data.frame(
+  Classe = paste0("[", round(breaks[-length(breaks)], 2), ", ", round(breaks[-1], 2), "]"),
+  Effectif = n_j,
+  Densite_estimee = round(f_hat, 3)
+)
+
+```
+
+```{r}
+# Données
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+
+# Taille de l'échantillon
+n <- length(X)
+
+# Définition des bornes de l'intervalle
+a <- min(X)
+b <- max(X)
+
+# Nombre de classes
+#J <- 4
+
+# Largeur des classes
+h <- 0.9973
+
+# Définition des bornes des classes
+breaks <- seq(a, b, by = h)
+
+```
+
+### Construisons à présent l'estimateur
+
+```{r}
+# Construction de l’histogramme 
+hist_res <- hist(X, plot = FALSE)
+
+# Effectifs par classe (n_j)
+n_j <- hist_res$counts
+
+# Estimateur de la densité par classe
+f_hat <- n_j / (n * h)
+
+# Affichage des résultats
+data.frame(
+  Classe = paste0("[", round(breaks[-length(breaks)], 2), ", ", round(breaks[-1], 2), "]"),
+  Effectif = n_j,
+  Densite_estimee = round(f_hat, 3)
+)
+```
+
+```{r}
+# Tracé de l’histogramme
+hist_res <- hist(X,  freq = FALSE, col = "skyblue",
+                 main = "Estimateur par histogramme",
+                 xlab = "X", ylab = "Densité estimée", border = "darkblue")
+
+# Coordonnées du polygone des fréquences :
+# abscisses = milieux des classes
+mids <- hist_res$mids
+
+# ordonnées = densité estimée (f_hat)
+densites <- hist_res$density
+
+# Tracé de la ligne du polygone des fréquences
+lines(mids, densites, type = "b", col = "red", lwd = 2, pch = 19)
+
+
+```
+
+## Estimation par la méthode de l’histogramme : validation croisée
+
+### Principe de la validation croisée
+
+La validation croisée est une méthode générique pour sélectionner des paramètres de modèles (comme le nombre de classes dans un histogramme) en évaluant leur performance prédictive. En statistique non paramétrique, elle permet d'optimiser des estimateurs (densité, régression, etc.) 
+
+```{r, eval=FALSE}
+set.seed(123)
+CV_hist=function(x) # définition de la fonction en fonction de l'échantillon x
+{
+  n=length(x)
+  # valeurs minimale et maximale de x, utilisées pour délimiter les bornes de l’histogramme
+  a=min(x)
+  b=max(x) 
+  N=round(n/5); # nombre maximal de classe à tester
+  b=b+(b-a)/N
+  m_CV=1
+  J0=2/(n-1)
+  J=1:N;
+  
+  # Boucle pour tester différents nombres de classes  
+  for (m in 2:(N+1)){
+    h=(b-a)/m
+    hatp=1:m
+    A=(1:m)%*%t((1:n)*0+1)
+    xx=((1:m)*0+1)%*%t((x-a)/h)
+    hatp=rowSums(((A-1)<=xx)*(xx<A))/n
+    J[m-1]=2-(n+1)*sum(hatp^2)
+    remove(hatp)
+    J[m-1]=J[m-1]/((n-1)*h)
+    
+    # Choix du nombre optimal de classes
+    if (J[m-1]<J0) {m_CV=m; J0=J[m-1]}
+  }
+  op=par(mfcol=c(1,2),pty="m",omi=c(0,0,0,0))
+  plot(2:(N+1),J,type='l',lwd=2,col='darkred', 
+       main="La courbe de la fonction de validation croisée',,xlab='nb de classes",ylab='CV')
+  h=(b-a)/m_CV
+  hatf=1:m_CV
+  n=length(x)
+  m=m_CV
+  
+  # Calcul de l'estimateur de densité optimal
+  for (j in 1:m_CV){hatf[j]=sum(((j-1)*h<=x-a)*(x-a<j*h))/(n*h)}
+  xleft=a-h+(1:m)*h
+  xright=xleft+h
+  ybottom=(1:m)*0
+  ytop=hatf
+  plot(c(a-h/n,xleft,b),c(0,hatf,0),type="n",xlab="Les classes", 
+       ylab="Estimateur de densité",main="Histogramme avec le nombre de classes optimal")
+  
+  rect(xleft, ybottom, xright, ytop, col = "cyan", border = "darkblue", lwd = 1)
+  par(op)
+  return(m_CV)
+}
+```
+
+n: Nombre d'observations dans l'échantillon x.
+a: Minimum des valeurs de x.
+b: Maximum des valeurs de x.
+N: Nombre initial de classes, souvent fixé à n/5.
+m_CV: Variable pour stocker le nombre optimal de classes sélectionné.
+J0: Initialisation d'une mesure de performance basée sur la validation croisée.
+
+### Boucle de validation croisée 
+
+La boucle for (m in 2:(N+1)) parcourt différents nombres de classes possibles. Pour chaque nombre de classes m :  
+
+- Calcule la largeur de classe h, 
+- Estime la fonction de densité à l'aide de l'histogramme pour chaque nombre de classes, 
+- Calcule une mesure d'erreur de l'histogramme à l'aide de la validation croisée (J[m-1]), 
+- Compare J[m-1] avec J0 (la meilleure performance observée jusqu'à présent) et met à jour m_CV si une meilleure performance est trouvée avec le nombre actuel de classes m, 
+- Trace la courbe de la fonction de validation croisée (J par rapport à m), 
+- Identifie le nombre optimal de classes m_CV qui minimise l'erreur de validation 
+croisée, 
+- Trace l'histogramme final avec le nombre optimal de classes sélectionné. 
+
+La fonction CV_hist retourne m_CV, qui est le nombre optimal de classes déterminé par la méthode de validation croisée.
+
+
+En résumé, la méthode de validation croisée évalue différentes configurations d'histogrammes (en termes de nombre de classes) en utilisant une mesure d'erreur spécifique (J) basée sur la performance de l'histogramme pour estimer la densité des données. Elle sélectionne le nombre de classes qui minimise cette erreur, permettant ainsi de trouver une estimation optimale de la densité des données à partir de l'échantillon x.
+
+### Autres méthodes pour trouver le nombre de classes optimales 
+
+- **Méthode de Sturges**
+
+La méthode de Sturges est une règle empirique simple pour déterminer le nombre de classes k dans un histogramme. Elle est particulièrement adaptée aux distributions symétriques et unimodales (comme la loi normale).
+
+```{r, eval=FALSE}
+n <- 8000
+x <- runif(n, 0, 5)
+
+Cv_hist_stur <- function(sample) {
+  n <- length(sample)
+  k_optimal <- floor(1 + log2(n))
+  return(k_optimal)
+}
+
+Cv_hist_stur(x)
+```
+
+**Commentaire:** On trouve 13 classes: ce qui veut dire que nos donées sont découpées en 13 classes ou intervalles de classes.
+
+- **Méthode de Freedman-Diaconis : ** La méthode de Freedman-Diaconis est une approche robuste qui tient compte de la dispersion des données via l'écart interquartile (IQR). Elle est optimale pour les distributions asymétriques ou avec outliers.
+
+```{r, eval=FALSE}
+# méthode simple mais peu adapté à de grands échantillons
+Freedman_Diaconis_hist <- function(sample) {
+  n <- length(sample)
+  IQR_value <- IQR(sample) # calcul de l'écart interquartile
+  h <- 2 * IQR_value * n^(-1/3) 
+  range_x <- max(sample) - min(sample) # etendue des données 
+  k_optimal <- floor(range_x / h)
+  return(k_optimal)
+}
+
+# méthode plus robuste
+Freedman_Diaconis_hist(x) 
+
+# validation croisée 
+CV_hist(x)
+```
+
+### Analyse des graphiques  
+
+Pour le premier graphe, l’axe horizontal représente le nombre de classes (bins) testées : de 2 à N+1.
+
+L’axe vertical représente la valeur de la fonction de validation croisée (CV) associée à chaque nombre de classes.
+La courbe montre comment évolue la qualité de l’estimation de la densité en fonction du nombre de classes.
+
+Pour le deuxième graphe, il s’agit de l’estimation de densité à l’aide d’un histogramme utilisant le nombre de classes optimal sélectionné via la validation croisée.
+
+Les barres bleues représentent les valeurs estimées de la densité pour chaque intervalle.
+
+Cet histogramme correspond à une estimation par histogramme du support [0, 5] de la variable simulée (loi uniforme). 
+
+## Estimation par la méthode du noyau 
+
+On suppose qu'on dispose de $n$ observations $x_1,..., x_n$.
+
+Un estimateur de la densité de la loi qui régie les données $x_1,..., x_n$ est donnée par : 
+
+$$\hat{f}_n(x) = \frac{1}{n h} \sum_{i=1}^n K\left(\frac{x - x_i}{h}\right)$$
+où $K$ est un noyau(définition dans le cours).
+
+
+### Noyau de Parzen-Rosenblatt 
+
+**Données**
+
+```{r}
+# Données
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 2.9, 2.1, 3.7)
+n <- length(X)
+
+#  h (amplitude / 4)
+h <- (max(X) - min(X)) / 4
+cat("h =", h, "\n")
+bornes <- seq(min(X),max(X), h)
+```
+
+**Estimation par la méthode des histogrammes : **
+
+Soient [a,b] l'intervalle contenant les observations $(x_1,x_2,...x_n)$.On partitionne l'intervalle [a,b] en J classes de longueur $h$. Les classes sont notées : $A_j=[a_j,a_{j+1}]$. Chaque classe dispose d'un effectif $n_j$ ,j=1,2,...,J et $h_j=a_{j+1}-a_j$. Autrement dit, $Card(A_j )=n_j$. Et, $$
+f_n=\frac{n_j}{n\times h}$$
+
+```{r}
+n_ <- numeric(4)
+for (i in X){
+  if (bornes[1]<= i & i < bornes[2]){
+    n_[1] <- n_[1]+1
+  }
+  if (bornes[2]<= i & i < bornes[3]){
+    n_[2] <- n_[2]+1
+  }
+  if (bornes[3]<= i & i < bornes[4]){
+    n_[3] <- n_[3]+1
+  }
+  if (bornes[4]<= i & i <= bornes[5]){
+    n_[4] <- n_[4]+1
+  }
+}
+n_ 
+f_n_histogramme <- n_/ (n*4)
+f_n_histogramme
+
+# Vérification de la somme 
+sum(f_n_histogramme)*4==1
+```
+
+**Estimation par le noyau de ROSENBALTT :**
+
+Pour pallier les limites de l'estimateur de la densité par la méthode des histogrammes, plus précisement celle liée à la **continuité** de l'estimateur de la densité, on utilise la méthode d'estimation par le noyau. Cette partie porte sur le noyau de ROSENBALTT.
+
+
+**Formule de la densité**
+
+$$
+\hat{f}_n(x)=\frac{1}{N}\sum_{i=1}^{N}\frac{1}{h}K(\frac{x-x_i}{h})
+$$ 
+Avec 
+$$ 
+K(x)=\frac{1}{2}1_{[-1,1]}(x)
+$$
+
+```{r}
+# Fonctions et boucles
+
+# Fonction de Rosenblatt
+Rosenblatt <- function(u) {
+  ifelse(abs(u) <= 1, 0.5, 0)
+}
+
+# Fonction pour estimer f(x) en un point x
+fonction_density <- function(x, X, h) {
+  n <- length(X)
+  u <- (x - X) / h
+  fx <- sum(Rosenblatt(u)) / (n * h)
+  return(fx)
+}
+# Boucle pour calculer 
+densite <- numeric(n)  
+
+for (i in 1:n) {
+  densite[i] <- fonction_density(X[i], X, h)
+}
+
+```
+
+```{r}
+# Afficher les résultats
+data.frame(X = X, f_n = round(densite, 4))
+
+# Graphique
+x_grid <- seq(min(X) - 1, max(X) + 1, length.out = 200)
+dens_grid <- sapply(x_grid, function(x) fonction_density(x, X, h))
+
+plot(x_grid, dens_grid, type = "l", lwd = 2, col = "blue",
+     main = "Estimation de la densité par le noyau de Rosenblatt",
+     xlab = "x", ylab = "f(x)")
+rug(X)  
+
+```
+
+**Avec une fonction native de R :** Il n'y pas de fonction native de R permettant de calculer la densité avec le noyau de Parzen-Rosenblatt.
+
+### Noyau triangulaire 
+
+L'objectif ici , c'est d'estimer la densité de la loi de x à partir de la méthode du noyau en utilisant le noyau triangulaire  .  
+
+La densité estimée au point X est donnée par la forme ci-après :
+
+$$
+\hat{f}_h(x) = \frac{1}{n h} \sum_{i=1}^n K\left( \frac{x - X_i}{h} \right)
+$$
+
+avec $K$ donné par :
+
+$$
+K(u) = (1 - |u|) \cdot \mathbb{1}_{\{|u| \leq 1\}}
+$$
+
+- **Fonction du noyau triangulaire**
+
+```{r}
+
+triangular_kernel <- function(u) {
+  ifelse(abs(u) <= 1, 1 - abs(u), 0)
+}
+```
+
+
+- **Fonction pour l'estimation de la densité aux points x**
+
+
+```{r}
+# Estimation de la densité aux points de x
+estimate_density_x <- function(x, h) {
+  n <- length(x)
+  f_hat <- numeric(n)
+  
+  for (i in seq_along(x)) {
+    u <- (x-x[i]) / h
+    f_hat[i] <- sum(triangular_kernel(u)) / (n * h)
+  }
+  
+  return(f_hat)
+}
+
+```
+
+- **Application de la fonction pour estimer la densité aux points de x**
+
+Utilisons des données de l'exercice du cours :
+
+```{r}
+# Données
+x <- c(1.1, 2.3, 1.7,2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+```
+
+
+$$
+h = \frac{\max(x) - \min(x)}{\text{nombre de classes}}
+$$
+
+```{r}
+# Nombre de classes
+k <- 4
+
+# Calcul de la fenêtre h
+h <- (max(x) - min(x)) / k
+
+# Affichage
+h
+```
+
+```{r}
+densities_x <- estimate_density_x(x, h)
+
+resultats <- data.frame(
+  x = x,
+  densite_estimee = densities_x
+)
+
+# Affichage du tableau
+resultats
+```
+
+### Noyau Triweight
+
+- **Estimation de densité**
+
+L'estimateur à noyau de la densité est défini par : 
+
+$$\hat f_h(x) = \frac{1}{n\,h} \sum_{i=1}^n K\Bigl(\frac{x - X_i}{h}\Bigr),$$ 
+
+avec :
+
+-   n la taille de l'échantillion
+
+-   h la bande passante (paramétre de lissage)
+
+-   K la fonction noyau
+
+Le noyau de Triweight est défini par : 
+
+$$
+K(u) = 
+\begin{cases}
+  \dfrac{35}{32}\,(1 - u^2)^3, & |u| \le 1, \\
+  0, & |u| > 1.
+\end{cases}
+$$
+
+- **Définition du noyau de Triweight : **
+
+Syntaxe par defaut de R: bkde(estim_notes, kernel = "triweight",
+bandwidth = h) et h = bw.nrd0(estim_notes), estimation de h par la
+methode de Silverman Cette methode suppose que notre dataset suit une
+loi normale.
+
+```{r}
+triweight_kernel <- function(u) {
+  ifelse(abs(u) <= 1, (35/32) * (1 - u^2)^3, 0)
+}
+```
+
+- **Fonction d'estimation**
+
+```{r}
+density_triweight <- function(x0, X, h) {
+  u <- (x0 - X) / h # u est un vecteur
+  mean(triweight_kernel(u)) / h
+}
+```
+
+- **Visualisation de K(u) sur [-1.2,1.2]**
+
+```{r}
+
+u <- seq(-1.2, 1.2, length.out = 400) # vecteur de 400 vleurs equidistant sur l'intervalle
+plot(u, triweight_kernel(u), type = 'l',
+     main = 'Noyau de Triweight', xlab = 'u', ylab = 'K(u)')
+
+```
+
+```{r}
+
+data <- read_excel("BASES/notes_Triweight_kernel.xlsx")
+head(data)
+estim_notes <- data[[1]]
+anthrop_notes <- data[[2]]
+```
+
+- **Estimation de la densité**
+
+ref:
+<https://fastercapital.com/fr/contenu/La-regle-empirique-de-Silverman---une-regle-a-modeliser-par---les-connaissances-de-Silverman-sur-la-regression-du-noyau.html>
+
+$$
+h = 0.9 \cdot \min\left( \sigma, \frac{\text{IQR}}{1.34} \right) \cdot n^{-1/5}
+$$
+
+```{r}
+# Grille d'evaluaton
+grid <- seq(min(estim_notes) - 1, max(estim_notes) + 1, length.out = 600) 
+
+#print(grid)
+
+# Calcul de h par la régle empirique de Silverman'. 
+# Le principe est de minimiser l'erreur quadratique moyenne (pour n grand, alors AMISE)
+
+h_theorique <- 1.06 * sd(estim_notes) * length(estim_notes)^(-1/5)
+# Ce h est la version theorique , elle est sensible aux outliers
+
+
+# En pratique on se sert d'une version plus robuste (c'est elle qui s'obtient avec bw.nrd0(estim_notes))
+# car les données ne sont pas necessairement parfaitement normale donc possibilite de valeurs extremes
+h_silverman <- 0.9 * min(sd(estim_notes), IQR(estim_notes)/1.34) * length(estim_notes)^(-1/5)
+
+cat("h théorique (1.06 · σ · n^(-1/5)) :", round(h_theorique, 4), "\n")
+cat("h robuste (bw.nrd0)              :", round(h_silverman, 4), "\n")
+
+# Calcul de l'estimation de tous les points
+
+dens_tri <- sapply(grid, function(x0) density_triweight(x0, X = estim_notes, h = h_silverman))
+
+```
+
+```{r}
+
+df <- data.frame(x = grid, dens = dens_tri)
+ggplot(df, aes(x = x, y = dens)) +
+  geom_line(size = 1, color = 'blue') +
+  labs(
+    title = 'Estimation de densité avec noyau de Triweight',
+    subtitle = paste('h =', round(h_silverman, 3)),
+    x = 'Valeurs', y = 'Densité estimée'
+  ) +
+  theme_minimal()
+
+
+```
+
+- **Avec le package KernSmooth**
+
+Par defaut, le noyau triweight n'est pas implementé dans la fonction
+density,on se sert du package Par defaut, le noyau triweight n'est pas
+implementé dans la fonction density. On se sert du package KernSmooth
+
+```{r}
+
+h <- bw.nrd0(estim_notes)  # methode de Silverman, argument par defaut dans la fonction density
+print(h)
+
+res <- bkde(estim_notes, kernel = "triweight", bandwidth = h)  
+
+
+df_kd <- data.frame(x = res$x, y = res$y)
+
+
+ggplot(df_kd, aes(x = x, y = y)) +
+  geom_line(color = "darkorange", size = 1) +
+  labs(
+    title = "Densité estimée (bkde) – noyau triweight",
+    subtitle = paste0("Bande passante (h) selon Silverman = ", round(h, 3)),
+    x = "Valeurs",
+    y = "Densité"
+  ) +
+  theme_minimal()
+
+
+```
+
+```{r}
+
+# df <- data.frame(x = grid, dens = dens_tri)
+
+ggplot() +
+  # Histogramme normalisé (les hauteurs correspondent a une densité)
+  geom_histogram(aes(x = estim_notes, y = after_stat(density)),
+                 bins = 30, fill = "red", color = "yellow", alpha = 0.6) +
+  
+  # Courbe de densité estimée
+  geom_line(data = df, aes(x = x, y = dens),
+            color = "blue", size = 1) +
+  
+  labs(
+    title = "Estimation de densité avec noyau de Triweight et histogramme",
+    subtitle = paste("h =", round(h_silverman, 3)),
+    x = "Valeurs",
+    y = "Densité"
+  ) +
+  theme_minimal()
+
+
+
+```
+
+- **Influence de la valeur de h**
+
+```{r}
+h_values <- c(0.1, h_silverman / 2, h_silverman, 2 * h_silverman)
+# Pour chaque valeur de h on créer un data frame puis on les merge tous.
+
+df_h <- do.call(rbind, lapply(h_values, function(h) {
+  dens <- sapply(grid, function(x0) density_triweight(x0, X = estim_notes, h = h))
+  data.frame(
+    x    = grid,
+    dens = dens,
+    h    = paste0('h = ', round(h, 3))# arrondir a 3 chiffres
+  )
+}))
+
+ggplot(df_h, aes(x = x, y = dens, color = h)) +
+  geom_line(size = 1) +
+  labs(
+    title = "  l'estimation de densité avec differents valeurs de h",
+    x = "Valeurs", y = "Densité"
+  ) +
+  theme_light()
+
+```
+
+- **Calcul de h par la methode AMISE**
+
+Source :
+<http://archives.univ-biskra.dz/bitstream/123456789/21522/1/Baia_Ikram.pdf> , page 25
+
+La formule asymptotique de l'erreur quadratique moyenne intégrée est :
+
+$$
+\text{AMISE}(h) \approx \frac{R(K)}{n h} + \frac{1}{4} h^4 \mu_2(K)^2 R(f'')
+$$
+
+Où :
+
+-   $$ R(K) = \int K^2(u)\,du )$$
+-   $$ \mu_2(K) = \int u^2 K(u)\,du )$$
+-   $$ R(f'') = \int [f''(x)]^2 dx )$$
+-   n est la taille de l’échantillon La valeur de h qui minimise cette
+    AMISE est :
+
+$$
+h_{\text{AMISE}} = \left( \frac{R(K)}{n \mu_2(K)^2 R(f'')} \right)^{1/5}
+$$
+
+Pour le noyau **Triweight** : 
+- $$( R(K) = \frac{350}{429} )$$ 
+- $$( \mu_2(K) = \frac{1}{9} )$$
+
+R(f'') dépend de la vrai densité f qui est inconnue en pratique.
+
+On approxime R(f'') sous l’hypothèse que les données suivent une densité
+normale, auquel cas :
+
+$$
+R(f'') \approx \frac{3}{8 \sqrt{\pi} \sigma^5}
+$$
+
+où sigma est l'écart-type de l’échantillon.
+
+```{r}
+R_K <- 350 / 429
+mu2_K <- 1 / 9
+
+# Taille de l'échantillon et écart-type
+
+n <- length(estim_notes)
+sd_X <- sd(estim_notes)
+
+# Approximation de R(f'') sous hypothèse normale
+
+Rf2 <- 3 / (8 * sqrt(pi) * sd_X^5)
+
+
+h_amise <- (R_K / (mu2_K^2 * Rf2 * n))^(1/5)
+print(h_amise)
+
+
+```
+
+```{r}
+dens_tri <- sapply(grid, function(x0) density_triweight(x0, X = estim_notes, h = h_amise))
+df <- data.frame(x = grid, dens = dens_tri)
+ggplot() +
+  geom_histogram(aes(x = estim_notes, y = after_stat(density)),
+                 bins = 30, fill = "red", color = "yellow", alpha = 0.6) +
+  geom_line(data = df, aes(x = x, y = dens),
+            color = "blue", size = 1) +
+  labs(
+    title = "Estimation de densité avec noyau Triweight",
+    subtitle = paste("h optimisé par AMISE .h =", round(h_amise, 3)),
+    x = "Valeurs", y = "Densité"
+  ) +
+  theme_minimal()
+
+
+```
+
+Le choix de h relativement grand a pour effet de produire une courbe
+très lisse, qui atténue les pics de l’histogramme.
+
+- **Estimation de h par cross-validation par maximum de vraisemblance**
+
+Son incovénient nous le verrons c'est le temps de calcul.
+
+Source : <https://cran.opencpu.org/web/packages/kedd/vignettes/kedd.pdf> , Page 9
+
+La vraisemblance des données sous KDE est :
+
+$$
+L(h) = \prod_{i=1}^n \hat{f_h}(X_i)
+$$
+
+En prenant le logarithme, on obtient :
+
+$$
+\log L(h) = \sum_{i=1}^n \log \hat{f_h}(X_i)
+$$
+
+où $\hat{f_h}(X_i)$ est l’estimation de la densité en $X_i$ avec le paramètre de lissage $h$.
+
+- **Problème de surapprentissage**
+
+Lorsque $h \to 0$, on a :
+
+$$
+\hat{f_h}(X_i) \to \infty
+$$ \
+
+Pour u>1, K(u) est nulle donc pour i différent de j, K((X_i - X_j)/h) ==>0 mais comme K(0)>0 alors 1/(nh)*K(0)==> + infini
+chaque observation contribue fortement à sa propre estimation (graphiquement on obtient des pics sur les points connus). Cela conduit à un sur-apprentissage . 
+
+Cela pousserait l'algorithme à choisir un h arbitrairement petit, conduisant à un sur-apprentissage extrême où la densité estimée serait une série de pics infinitésimaux à chaque point de donnée.
+
+
+Pour éviter ce problème, on utilise la cross-validation par maximum de vraisemblance.
+
+On estime la densité en excluant successivement chaque observation $X_i$.
+
+L'estimateur de la densité en $X_i$ excluant $X_i$ est donné par :
+
+$$
+\hat{f_{h,-i}}(X_i) = \frac{1}{(n-1)h} \sum_{j \ne i} K\left(\frac{X_i - X_j}{h}\right)
+$$
+
+La log-vraisemblance devient : 
+$$
+CV(h) = \frac{1}{n} \sum_{i=1}^n \log \hat{f_{h,-i}}(X_i)
+$$
+
+ce critère de CV converge en probabilité vers la MISE:
+<https://www.researchgate.net/publication/280609040_Bootstrap_dans_l%27estimation_de_la_densite_par_la_methode_du_noyau>
+
+$$
+{h}_{CV} = \arg\max_{h > 0} CV(h)
+$$
+
+Cette méthode est non paramétrique et ne suppose aucune hypothèse forte sur la forme de la densité, tout en évitant le sur-apprentissage.
+
+```{r}
+# Fonction de cross-validation
+
+cv_log_likelihood <- function(h, X) {
+  n <- length(X)
+  log_dens <- sapply(1:n, function(i) {
+    xi <- X[i]
+    x_others <- X[-i]
+    u <- (xi - x_others) / h
+    k_vals <- triweight_kernel(u)
+    f_hat <- mean(k_vals) / h
+    log(f_hat)
+  })
+  -mean(log_dens) # Le signe - car en pratique on prend l'oppose de CV ( On minimise)
+}
+```
+
+A present pour trouver le h optimal il nous faut des candidats
+
+```{r}
+# Séquence de valeurs pour h à tester 100 valeurs
+h_seq <- seq(0.1, 2, length.out = 100) 
+
+# Application de la fonction (output list)
+cv_vals <- sapply(h_seq, function(h) cv_log_likelihood(h, estim_notes))
+
+# Recherche de la valeur optimale de h
+
+h_cv <- h_seq[which.min(cv_vals)]
+cat("h optimal est:", round(h_cv, 4), "\n")
+
+```
+
+```{r}
+# Densité estimée avec h_cv
+dens_cv <- sapply(grid, function(x0) density_triweight(x0, X = estim_notes, h = h_cv))
+df_cv <- data.frame(x = grid, dens = dens_cv)
+
+ggplot() +
+  geom_histogram(aes(x = estim_notes, y = after_stat(density)),
+                 bins = 30, fill = "red", color = "yellow", alpha = 0.5) +
+  geom_line(data = df_cv, aes(x = x, y = dens),
+            color = "blue", size = 1.2) +
+  labs(
+    title = "Estimation de densité avec noyau Triweight",
+    subtitle = paste("h optimisé par cross-validation =", round(h_cv, 3)),
+    x = "Valeurs", y = "Densité"
+  ) +
+  theme_minimal()
+```
+
+**Lien avec la MISE :** Il a été montré que la minimisation de ce critère de validation croisée est asymptotiquement équivalente à la minimisation de la MISE.
+
+
+### Noyau du cosinus 
+
+Le noyau cosinus est donné par :
+
+$$K(t) = \frac{\pi}{4} \cos\left(\frac{\pi}{2} t\right) \mathbf{1}_{[-1,1]}(t)$$
+Le code R pour la fonction est le suivant :
+
+```{r}
+K <- function(x)
+  {
+  K <- 0
+  if (-1 <= x && x <= 1) {
+    K <- (pi/4)*cos(x*pi/2)
+  } 
+  return (K)
+}
+```
+
+
+- **Test**
+
+```{r}
+
+print(K(0))
+```
+
+- **L'estimateur de densité**
+
+L'estimateur de densité moyennant le noyau cosinus est donné par :
+
+$$\hat{f}_n(x) = \frac{1}{n h} \sum_{i=1}^n \frac{\pi}{4} \cos\left(\frac{\pi}{2} \frac{x - x_i}{h}\right) \mathbf{1}_{[-1,1]}\left(\frac{x - x_i}{h}\right)$$
+
+Le code R est le suivant :
+
+```{r}
+fn <- function(data,x,nb_cla){
+  n <- length(data)
+  h <- (max(data)-min(data))/nb_cla
+  fn <- 0
+  for (i in 1:n){
+    fn <- fn + K((x-data[i])/h)
+  }
+  fn <- fn/(n*h)
+  return (fn)
+}
+```
+
+
+- **Test- **
+
+```{r}
+data <- c(1.1,2.3,1.7,2.8,3.2,1.9,2.5,3.7,2.9,2.1)
+
+# Test de la fonction au point x = 1.1
+print(fn(data = data,x = 1.1,nb_cla = 4))
+```
+
+- **Application sur des données réelles de l'EHCVM**
+
+Nous allons maintenant donner une application concrète sur les données EHCVM. 
+
+```{r}
+ehcvm_welfare_sen2018 <- read_dta("BASES/ehcvm_welfare_sen2018.dta")
+head(ehcvm_welfare_sen2018)
+```
+
+```{r}
+data <- as.vector(ehcvm_welfare_sen2018$pcexp)
+```
+
+
+- **Représentation de l'histogramme des données**
+
+```{r}
+hist(data, breaks = 200,freq = FALSE, main = "Histogramme des dépenses de consommation par tête (pcexp)", xlab = "Dépense")
+
+x_vals <- seq(min(data), max(data), length.out = 200)
+f_vals <- sapply(x_vals, function(x) fn(data, x , nb_cla = 200))
+lines(x_vals, f_vals, col = "blue", lwd = 2)
+legend("topright", legend = c("Densité estimée"), col = c("blue"), lwd = 2, lty = c(1, 2))
+```
+
+
+- **Estimation de la densité avec la fonction density()**
+
+Nous utilisons maintenant la fonction prédéfinie dans R pour comparer à la notre.
+
+```{r}
+# Créer l'histogramme de base
+hist(data, breaks = 200, freq = FALSE, 
+     main = "Histogramme des dépenses de consommation par tête (pcexp)", 
+     xlab = "Dépense", col = "lightgray")
+
+# Première courbe
+x_vals <- seq(min(data), max(data), length.out = 200)
+f_vals <- sapply(x_vals, function(x) fn(data, x, nb_cla = 200))
+lines(x_vals, f_vals, col = "blue", lwd = 2)
+
+# Deuxième courbe
+dens <- density(data, kernel = "cosine", n = 200)
+lines(dens$x, dens$y, col = "red", lwd = 2)
+
+# Légende
+legend("topright", 
+       legend = c("Densité estimée (méthode 1)", "Densité estimée par la fonction density()"), 
+       col = c("blue", "red"), lwd = 2, lty = 1)
+```
+
+On constate qu'on a pratiquement les mêmes résultats.
+
+
+- **Cas de la mesure de pauvreté**
+
+L'objectif ici est d'approximer la densité de la loi des dépenses de consommation par tête (variable pcexp) et de déterminer le taux de pauvreté.
+
+- **Taux de pauvreté (aire sous la densité à gauche du seuil z)**
+
+```{r}
+z <- mean(ehcvm_welfare_sen2018$zref)
+dens_vals <- sapply(data, function(xi) as.numeric(xi < z))
+```
+
+
+- **Construction**
+
+```{r}
+hist(data, breaks = 200, freq = FALSE,
+     main = "Analyse de la pauvreté",
+     xlab = "Dépenses de consommation par tête",
+     col = "blue", border = "white")
+
+# Tracer la densité
+lines(x_vals, f_vals, col = "green", lwd = 2)
+
+
+# Colorier l'aire sous la courbe avant le seuil z
+polygon_x <- x_vals[x_vals <= z]
+polygon_y <- f_vals[x_vals <= z]
+polygon(c(polygon_x, rev(polygon_x)), c(rep(0, length(polygon_x)), rev(polygon_y)),
+        col = "red", border = NA)
+
+# Ligne verticale pour le seuil
+abline(v = z, col = "blue", lwd = 2, lty = 2)
+
+# Calcul du taux de pauvreté
+z <- mean(ehcvm_welfare_sen2018$zref)
+poid=ehcvm_welfare_sen2018$hhweight*ehcvm_welfare_sen2018$hhsize/sum(ehcvm_welfare_sen2018$hhweight*ehcvm_welfare_sen2018$hhsize)
+# Calcul du taux de pauvreté
+taux_pauvrete <- sum(poid[data < z])
+
+legend("topright",
+       legend = c("Densité estimée","Seuil de pauvreté","Zone sous le seuil", paste("Taux pauvreté ≈", round(taux_pauvrete * 100, 2), "%")),
+       col = c("green","blue","red", NA),
+       lty = c(1,2, NA, NA), lwd = c(2,2, NA, NA), pch = c(NA,NA, 15, NA), pt.cex = 2, bty = "n")
+
+```
+
+- **Affichage en console**
+
+```{r}
+cat("Taux de pauvreté estimé :", round(taux_pauvrete * 100, 2), "%\n")
+```
+
+### Noyau d'Épanchnikov 
+
+La fonction du noyau d'Épanchnikov est définie comme suit :
+
+$$
+K(u) =
+\begin{cases}
+\frac{3}{4}(1 - u^2) & \text{si } |u| \leq 1 \\
+0 & \text{sinon}
+\end{cases}
+$$
+
+```{r cars}
+epanechnikov_kernel <- function(u) {
+  k <- 0.75 * (1 - u^2) * (abs(u) <= 1)
+  return(k)
+}
+```
+
+- **Fonction d'estimation de noyau**
+
+L’estimateur de la densité à noyau basé sur un échantillon $X_1, X_2, \dots, X_n$ est défini par :
+
+
+$$
+\hat{f}_h(x) = \frac{1}{n h} \sum_{i=1}^n K\left( \frac{x - X_i}{h} \right)
+$$
+
+
+
+- **Estimateur avec le noyau d'Épanchnikov**
+
+En remplaçant $K(u)$ par le noyau d’Épanchnikov, on obtient :
+
+$$
+\hat{f}_h(x) = \frac{1}{n h} \sum_{i=1}^n \left[ \frac{3}{4} \left( 1 - \left( \frac{x - X_i}{h} \right)^2 \right) \cdot \mathbf{1}_{\left| \frac{x - X_i}{h} \right| \leq 1} \right]
+$$
+
+
+```{r pressure, echo=FALSE}
+epanechnikov_density <- function(x, data, h) {
+  n <- length(data)
+  u <- outer(x, data, function(xi, xj) (xi - xj) / h)
+  k_values <- epanechnikov_kernel(u)
+  density <- rowMeans(k_values) / h
+  return(density);
+  return(u)
+}
+
+```
+
+
+- **Optimisation de h** 
+
+_Largeur de bande optimale \( h^* \) : _
+
+En minimisant l'AMISE (erreur quadratique intégrée moyenne asymptotique), on obtient la **largeur de bande optimale** :
+
+$$
+h^* = \left( \frac{R(K)}{ \mu_2^2(K) \cdot R(f'') \cdot n } \right)^{1/5}
+$$
+
+_Pour le noyau d’Épanchnikov : _
+
+$$
+R(K) = \int_{-1}^1 K^2(u)\, du = \frac{3}{5}, \quad \mu_2(K) = \int_{-1}^1 u^2 K(u)\, du = \frac{1}{5}
+$$
+
+En remplaçant dans la formule de \( h^* \), on obtient :
+
+$$
+h^* = \left( \frac{\frac{3}{5}}{ \left( \frac{1}{5} \right)^2 \cdot R(f'') \cdot n } \right)^{1/5}
+= \left( \frac{3}{5} \cdot \frac{25}{1} \cdot \frac{1}{R(f'') \cdot n} \right)^{1/5}
+= \left( \frac{15}{R(f'') \cdot n} \right)^{1/5}
+$$
+
+Nous ne connaissons pas la valeur de R(f''). La règle de Silverman fournit une approximation pratique de la largeur de bande \( h \) pour l’estimateur de densité à noyau, lorsque la densité \( f \) est supposée proche d'une loi normale.
+
+La formule est donnée par :
+
+$$
+h_{\text{Silverman}} = 0{,}9 \cdot \min\left( \sigma, \frac{\text{IQR}}{1{,}34} \right) \cdot n^{-1/5}
+$$ 
+
+```{r}
+h_optimal <- function(data) {
+  n <- length(data)
+  sigma <- sd(data)
+  iqr <- IQR(data)
+  s <- min(sigma, iqr / 1.34)
+  h <- 0.9 * s * n^(-1/5)
+  return(h)
+}
+```
+
+- **Pratique**
+
+```{r}
+data <- c(2.1, 2.3, 1.9, 2.5, 1.7, 2.8, 1.1, 3.2, 3.9, 2.9)
+# Estimation de la densité
+dens <- density(data)
+
+# Tracé de la densité
+plot(dens, main = "Estimation de la densité", xlab = "Valeurs", ylab = "Densité", col = "blue", lwd = 2)
+```
+
+```{r}
+# Génération de données simulées
+
+
+# Points où on évalue la densité
+x <- seq(min(data) - 1, max(data) + 1, length.out = 200)
+
+# Largeur de bande
+h <- h_optimal(data)
+
+# Calcul de la densité
+density_values <- epanechnikov_density(x, data, h)
+
+# Affichage du résultat
+plot(x, density_values, type = "l", lwd = 2, col = "blue",
+     main = "Estimation de densité - noyau d'Épanchnikov",
+     xlab = "x", ylab = "Densité")
+rug(data)  # Ajoute les observations sur l’axe x
+
+```
+
+
+### Noyau Biweight 
+
+**Partie théorique**
+
+- **Échantillon utilisé**
+
+$$
+X = (1.1,\ 2.3,\ 1.7,\ 2.8,\ 3.2,\ 1.9,\ 2.5,\ 3.7,\ 2.9,\ 2.1)
+$$
+
+- **Noyau Biweight**
+
+$$
+K(x) =
+\begin{cases}
+\dfrac{15}{16} \times (1 - x^2)^2 & \text{si } |x| < 1 \\
+0 & \text{sinon}
+\end{cases}
+$$
+
+- **Estimateur de la densité par noyau Biweight**
+
+$$
+\hat{f}_n(x) = \dfrac{1}{n h} \sum_{i=1}^{n} K\left( \dfrac{x - X_i}{h} \right)
+$$
+
+où $h$ est la fenêtre de lissage.
+
+
+**Application**
+
+- **Données**
+
+```{r}
+### Chargement des données
+X <- c(1.1, 2.3, 1.7, 2.8, 3.2, 1.9, 2.5, 3.7, 2.9, 2.1)
+```
+
+- **Définition du noyau Biweight**
+
+```{r}
+# Fonction noyau Biweight
+biweight_kernel <- function(x) {
+  ifelse(abs(x) < 1, (15/16) * (1 - x^2)^2, 0)
+}
+```
+
+- **Estimation de la densité**
+
+```{r}
+# Fonction d'estimation de la densité
+density_estimate <- function(x, sample, h) {
+  n <- length(sample)
+  sum <- 0
+  for (i in 1:n) {
+    sum <- sum + biweight_kernel((x - sample[i]) / h)
+  }
+  return(sum / (n * h))
+}
+```
+
+- **Calcul des densités estimées**
+
+```{r}
+# Définition de la fenêtre de lissage
+h <- 0.5
+
+# Calcul des densités estimées pour chaque observation
+density_estimates <- sapply(X, density_estimate, sample = X, h = h)
+
+# Affichage des densités estimées
+density_estimates
+```
+
+- **Visualisation : Histogramme des densités estimées**
+
+```{r}
+hist(density_estimates,
+     main = "Histogramme des densités estimées",
+     xlab = "Densité estimée",
+     col = "lightblue",
+     border = "black")
+
+
+```
+
+**Utilisation du test de Wald pour tester l'égalité de la densité estimée avec la densité uniforme**
+
+- **Hypothèse du test**
+
+$$
+\begin{cases}
+H_0 : \text{La densité de } X \text{ est uniforme} \\
+H_1 : \text{La densité de } X \text{ n'est pas uniforme}
+\end{cases}
+$$
+
+- **Région de rejet**
+
+Pour un test bilatéral de Wald au seuil $\alpha = 5\%$, les valeurs critiques $c_1$ et $c_2$ sont déterminées telles que :
+
+$$
+P\left( \hat{f}_n(x) < c_1 \right) = \dfrac{\alpha}{2} \quad \text{et} \quad P\left( \hat{f}_n(x) > c_2 \right) = \dfrac{\alpha}{2}
+$$
+
+- **Staistique du test**
+
+$$
+W = \frac{(\hat{f}(x) - f_0(x))^2}{\text{Var}(\hat{f}(x))}
+$$
+
+- **Calcul des statistiques : Moyenne et Variance**
+
+```{r}
+# Calcul de la moyenne
+mean_density <- mean(density_estimates)
+
+# Calcul de la variance
+var_density <- var(density_estimates)
+
+# Affichage des résultats
+cat("Moyenne des densités estimées :", mean_density, "\n")
+cat("Variance des densités estimées :", var_density, "\n")
+```
+
+- **Test statistique et décision**
+
+```{r}
+# Calcul de la statistique de test
+test_statistic <- (mean_density - 1) / sqrt(var_density / length(density_estimates))
+
+# Calcul de la valeur critique pour un test bilatéral à 5%
+alpha <- 0.05
+critical_value <- qnorm(1 - alpha / 2)
+
+# Affichage de la statistique de test et de la valeur critique
+cat("Statistique de test :", test_statistic, "\n")
+cat("Valeur critique :", critical_value, "\n")
+
+# Prise de décision
+if (abs(test_statistic) > critical_value) {
+  cat("Nous rejetons l'hypothèse nulle (H0).\n")
+} else {
+  cat("Nous ne rejetons pas l'hypothèse nulle (H0).\n")
+}
+```
+

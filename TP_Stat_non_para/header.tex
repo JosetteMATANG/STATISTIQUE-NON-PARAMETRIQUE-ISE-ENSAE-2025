@@ -1,0 +1,18 @@
+% -- Footnote rule and footer settings --
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+
+% Supprime la ligne en haut (header)
+\renewcommand{\headrulewidth}{0pt}
+
+% Line above the footer
+\renewcommand{\footrulewidth}{0.6pt}
+
+% Footer content: name on left, academic year on right
+\fancyfoot[L]{Statistique non paramétrique, ISE 2}
+\fancyfoot[C]{\thepage} % numéro de page centré
+\fancyfoot[R]{2024--2025}
+
+% Optional spacing tweaks
+\setlength{\footskip}{12pt} % spacing between text and footer
